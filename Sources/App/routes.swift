@@ -1,6 +1,6 @@
 import Vapor
 
 func routes(_ app: Application) throws {
-    let router = Router(app: app)
+    let router = Router<Note>(app: app)
     router.postCreateNote()
 }

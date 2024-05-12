@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-final class Note: Model,Content,@unchecked Sendable {
+final class Note: Notable,@unchecked Sendable {
     
     static let schema = "notes"
     static let date = "date"
@@ -50,4 +50,17 @@ final class Note: Model,Content,@unchecked Sendable {
         self.note = try container.decode(String.self, forKey: .note)
         self.date = Date.init(timeIntervalSince1970: try container.decode(Double.self, forKey: .date))
     }
+    
+    func requestUpdate(with newValue: Note) -> Note {
+        note = newValue.note
+        cardColor = newValue.cardColor
+        date = newValue.date
+        return self
+    }
+    
+    func asNotableResponse(with status: HTTPResponseStatus, error: ErrorMessage?) -> NoteResponse<Note> {
+        .init(code: status, error: error, data: self)
+    }
+    
 }
+
