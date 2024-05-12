@@ -20,10 +20,10 @@ public class AppDB {
             database: Environment.get("DATABASE_NAME") ?? "vapor_database",
             tls: .prefer(try .init(configuration: .clientDefault)))
         ), as: .psql)
-        
+        app.middleware.use(RequestLoggingMiddleware())
         app.migrations.add(CreateNote())
         app.logger.logLevel = .debug
-        try app.autoMigrate().wait()
         try routes(app)
+        try app.autoMigrate().wait()
     }
 }

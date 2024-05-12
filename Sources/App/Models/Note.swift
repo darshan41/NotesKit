@@ -29,20 +29,6 @@ final class Note: Notable,@unchecked Sendable {
     
     init() { }
     
-    init(id: UUID? = nil, note: String, cardColor: String,date: Date) {
-        self.id = id
-        self.cardColor = cardColor
-        self.note = note
-        self.date = date
-    }
-    
-    enum CodingKeys: String,CodingKey {
-        case id
-        case cardColor
-        case note
-        case date
-    }
-    
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
@@ -51,6 +37,23 @@ final class Note: Notable,@unchecked Sendable {
         self.date = Date.init(timeIntervalSince1970: try container.decode(Double.self, forKey: .date))
     }
     
+    init(id: UUID? = nil, note: String, cardColor: String,date: Date) {
+        self.id = id
+        self.cardColor = cardColor
+        self.note = note
+        self.date = date
+    }
+    
+    fileprivate enum CodingKeys: String,CodingKey {
+        case id
+        case cardColor
+        case note
+        case date
+    }
+}
+
+extension Note {
+    
     func requestUpdate(with newValue: Note) -> Note {
         note = newValue.note
         cardColor = newValue.cardColor
@@ -58,9 +61,7 @@ final class Note: Notable,@unchecked Sendable {
         return self
     }
     
-    func asNotableResponse(with status: HTTPResponseStatus, error: ErrorMessage?) -> NoteResponse<Note> {
+    func asNotableResponse(with status: HTTPResponseStatus, error: ErrorMessage?) -> AppResponse<Note> {
         .init(code: status, error: error, data: self)
     }
-    
 }
-

@@ -7,7 +7,7 @@
 
 import Foundation
 
-class AppDecoder: @unchecked Sendable {
+open class AppDecoder: @unchecked Sendable {
     
     static let shared: AppDecoder = AppDecoder()
     

@@ -9,20 +9,20 @@ import Foundation
 import Fluent
 import Vapor
 
-enum ErrorMessage: Codable, Error {
+public enum ErrorMessage: Codable, Error {
     case customString(String)
     case errorMessages([String: String])
 }
 
-protocol NoteResponseEncodable {
+public protocol NoteResponseEncodable {
     
     associatedtype T: Content
     var data: T? { get }
 }
 
-struct NoteResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content {
+public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content {
     
-    func encodeResponse(for request: Vapor.Request) -> NIOCore.EventLoopFuture<Vapor.Response> {
+    public func encodeResponse(for request: Vapor.Request) -> NIOCore.EventLoopFuture<Vapor.Response> {
         do {
             let response = Response(status: self.code)
             try response.content.encode(self)
@@ -32,14 +32,16 @@ struct NoteResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content
         }
     }
     
-    let code: HTTPResponseStatus
-    let error: ErrorMessage?
-    let data: T?
+    public let code: HTTPResponseStatus
+    public let error: ErrorMessage?
+    public let data: T?
 }
+
+// MARK: Helper func's
 
 extension NoteResponseEncodable {
     
-    var encodeData: T {
+    public var encodeData: T {
         get throws {
             guard let data else {
                 throw ErrorMessage.customString("Server Error, Unable to encode data this was not supposed to happen!")
