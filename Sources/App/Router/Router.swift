@@ -78,8 +78,8 @@ extension Router {
     @discardableResult
     func getSpecificHavingIDNote() -> Route {
         app.get(.constant(.api),.constant(.version),    .constant(Router.ApiPath.createNote.keyValue),.parameter(String.id)) { req -> NoteEventLoopFuture<T> in
-            guard let idValue = req.parameters.get(.id, as: String.self) as? T.IDValue else {
-                return req.eventLoop.future(error: Abort(.internalServerError))
+            guard let idValue = req.parameters.getCastedTID(T.self) else {
+                return req.eventLoop.future(error: Abort(.notFound))
             }
             return T.find(idValue, on: req.db).flatMap { value in
                 if let wrapped = value {
@@ -92,12 +92,32 @@ extension Router {
     }
     
     @discardableResult
+    func deleteTheNote() -> Route {
+        app.delete(.constant(.api),.constant(.version),    .constant(Router.ApiPath.createNote.keyValue),.parameter(String.id)) { req -> NoteEventLoopFuture<T> in
+            guard let idValue = req.parameters.getCastedTID(T.self) else {
+                return req.eventLoop.future(error: Abort(.notFound))
+            }
+            return T.find(idValue, on: req.db)
+                .flatMap { wrapped -> NoteEventLoopFuture<T>  in
+                    if let wrapped {
+                        let value = wrapped
+                            .delete(on: req.db)
+                            .transform(to: NoteResponse<T>(code: .created, error: nil, data: wrapped))
+                        return value
+                    } else {
+                        return req.eventLoop.future(NoteResponse(code: .badRequest, error: .customString("Unable to find the note with requested id: \(req.parameters.get(.id) ?? "None")"), data: nil))
+                    }
+                }
+        }
+    }
+    
+    @discardableResult
     func putTheNote() -> Route {
         app.put(.constant(.api),.constant(.version),    .constant(Router.ApiPath.createNote.keyValue),.parameter(String.id)) { req -> NoteEventLoopFuture<T> in
             do {
                 let note = try req.content.decode(T.self, using: self.decoder)
-                guard let idValue = req.parameters.get(.id, as: String.self) as? T.IDValue else {
-                    return req.eventLoop.future(error: Abort(.internalServerError))
+                guard let idValue = req.parameters.getCastedTID(T.self) ?? note.id else {
+                    return req.eventLoop.future(error: Abort(.notFound))
                 }
                 let found = T.find(idValue, on: req.db)
                 let mapped = found.flatMap { wrapped -> NoteEventLoopFuture<T>  in
@@ -126,6 +146,7 @@ extension String {
     fileprivate static let api: String = "api"
     fileprivate static var id: String { "id" }
     fileprivate static let version: String = "v1"
+    
 }
 
 extension Router {
@@ -153,3 +174,22 @@ extension EventLoopFuture where Value: Notable {
     }
 }
 
+
+extension String? {
+    
+    var uuid: UUID? {
+        guard let self else { return nil }
+        return UUID(uuidString: self)
+    }
+    
+    func getCastedTID<T: Notable>(_ t: T.Type = T.self) -> T.IDValue? {
+        uuid as? T.IDValue
+    }
+}
+
+extension Parameters {
+    
+    func getCastedTID<T: Notable>(_ t: T.Type = T.self) -> T.IDValue? {
+        self.get(.id, as: String.self).uuid as? T.IDValue
+    }
+}

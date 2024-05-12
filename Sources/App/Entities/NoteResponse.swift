@@ -20,12 +20,12 @@ protocol NoteResponseEncodable {
     var data: T? { get }
 }
 
-struct NoteResponse<T: Content>: ResponseEncodable,NoteResponseEncodable {
+struct NoteResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content {
     
     func encodeResponse(for request: Vapor.Request) -> NIOCore.EventLoopFuture<Vapor.Response> {
         do {
             let response = Response(status: self.code)
-            try response.content.encode(try encodeData)
+            try response.content.encode(self)
             return request.eventLoop.future(response)
         } catch let error {
             return request.eventLoop.future(error: error)
