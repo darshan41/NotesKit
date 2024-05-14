@@ -7,12 +7,13 @@
 
 import Vapor
 import Fluent
+import Foundation
 
 open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRouteCollection {
     
     private (set)var decoder: JSONDecoder
     
-    private let app: Application
+    private (set)var app: Application
     private (set)open var version: APIVersion
         
     public init(
@@ -28,9 +29,13 @@ open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRou
     open func boot(routes: any Vapor.RoutesBuilder) throws {
         routes.add(getAllCodableObjects())
         routes.add(postCreateCodableObject())
-        routes.add(getSpecificCodableObjecctHavingID())
+        routes.add(getSpecificCodableObjectHavingID())
         routes.add(deleteTheCodableObject())
         routes.add(putTheCodableObject())
+    }
+    
+    open func generateUnableToFind(forRequested id: T.IDValue) -> String {
+        "Unable to find the item for requested id: \(id)"
     }
     
     /// By Default All POST and Get use this.... as last path.
@@ -42,7 +47,7 @@ open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRou
     
     /// The Query Components for DELETE,GET(with id) or Put
     /// - Returns: PathComponent
-    /// /// eg: http://127.0.0.1:8080/api/v1/note/:id
+    /// eg: http://127.0.0.1:8080/api/v1/note/:id
     open func pathVariableComponents() -> [PathComponent] {
         return []
     }
@@ -77,7 +82,7 @@ open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRou
     }
     
     @discardableResult
-    open func getSpecificCodableObjecctHavingID() -> Route {
+    open func getSpecificCodableObjectHavingID() -> Route {
         app.get(finalComponents()) { req -> NoteEventLoopFuture<T> in
             guard let idValue = req.parameters.getCastedTID(T.self) else {
                 return req.eventLoop.future(error: Abort(.notFound))
@@ -86,7 +91,7 @@ open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRou
                 if let wrapped = value {
                     return req.eventLoop.future(AppResponse<T>(code: .ok, error: nil, data: wrapped))
                 } else {
-                    return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString("Unable to find the ID\(idValue as? String ?? ".")"), data: nil))
+                    return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
                 }
             }
         }
@@ -106,7 +111,7 @@ open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRou
                             .transform(to: AppResponse<T>(code: .created, error: nil, data: wrapped))
                         return value
                     } else {
-                        return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString("Unable to find the note with requested id: \(req.parameters.get(.id) ?? "None")"), data: nil))
+                        return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
                     }
                 }
         }
@@ -131,7 +136,7 @@ open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRou
                             }
                         return value
                     } else {
-                        return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString("Unable to find the note with requested id: \(req.parameters.get(.id) ?? "None")"), data: nil))
+                        return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
                     }
                 }
                 return mapped

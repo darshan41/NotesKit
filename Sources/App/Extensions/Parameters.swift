@@ -16,3 +16,15 @@ extension Parameters {
     }
 }
 
+extension Array {
+    
+    func byAdding(_ component: Element...) -> Self {
+        self + component
+    }
+    
+    mutating
+    func byAdding(_ components: [Element]) -> Self {
+        self + components
+    }
+}
+

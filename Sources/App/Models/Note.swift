@@ -8,7 +8,13 @@
 import Vapor
 import Fluent
 
-final class Note: Notable,@unchecked Sendable {
+final class Note: SortableNotes,@unchecked Sendable {
+    
+    typealias T = FieldProperty<Note, SortingValue>
+    typealias U = FieldProperty<Note, FilteringValue>
+    
+    typealias SortingValue = Date
+    typealias FilteringValue = String
     
     static let schema = "notes"
     static let date = "date"
@@ -50,10 +56,13 @@ final class Note: Notable,@unchecked Sendable {
         case note
         case date
     }
+    
+    var someComparable: FluentKit.FieldProperty<Note, Date> { self.$date }
+    var filterSearchItem: FluentKit.FieldProperty<Note, String> { self.$note }
 }
 
 extension Note {
-    
+        
     func requestUpdate(with newValue: Note) -> Note {
         note = newValue.note
         cardColor = newValue.cardColor
@@ -63,5 +72,16 @@ extension Note {
     
     func asNotableResponse(with status: HTTPResponseStatus, error: ErrorMessage?) -> AppResponse<Note> {
         .init(code: status, error: error, data: self)
+    }
+}
+
+extension Note: Comparable {
+    
+    static func < (lhs: Note, rhs: Note) -> Bool {
+        lhs.date < rhs.date
+    }
+    
+    static func == (lhs: Note, rhs: Note) -> Bool {
+        lhs.id == rhs.id
     }
 }
