@@ -28,3 +28,9 @@ extension Array {
     }
 }
 
+public extension FieldKey {
+    
+     init(_ keyStringValue: String) {
+        self.init(stringLiteral: keyStringValue)
+    }
+}

@@ -8,14 +8,16 @@
 import Foundation
 import Fluent
 
-struct CreateNote: Migration {
+struct CreateNote: AppMigration {
+    
+    typealias MigraterModelClass = Note
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(Note.schema)
             .id()
-            .field(.string(Note.note), .string, .required)
-            .field(.string(Note.cardColor), .string, .required)
-            .field(.string(Note.date), .date, .required)
+            .field(Note.note, .string, .required)
+            .field(Note.cardColor, .string, .required)
+            .field(Note.date, .date, .required)
             .create()
     }
     

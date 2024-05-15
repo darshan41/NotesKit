@@ -17,20 +17,21 @@ final class Note: SortableNotes,@unchecked Sendable {
     typealias FilteringValue = String
     
     static let schema = "notes"
-    static let date = "date"
-    static let note = "note"
-    static let cardColor = "cardColor"
     
-    @ID(custom: .id)
+    static let date: FieldKey = FieldKey("date")
+    static let note: FieldKey = FieldKey("note")
+    static let cardColor: FieldKey = FieldKey("cardColor")
+    
+    @ID(key: .id)
     var id: UUID?
     
-    @Field(key: .string(Note.note))
+    @Field(key: note)
     var note: String
     
-    @Field(key: .string(Note.cardColor))
+    @Field(key: cardColor)
     var cardColor: String
     
-    @Field(key: .string(Note.date))
+    @Field(key: date)
     var date: Date
     
     init() { }
