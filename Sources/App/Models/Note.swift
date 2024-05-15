@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-final class Note: SortableNotes,@unchecked Sendable {
+final class Note: SortableItem,@unchecked Sendable {
     
     typealias T = FieldProperty<Note, SortingValue>
     typealias U = FieldProperty<Note, FilteringValue>
@@ -41,7 +41,7 @@ final class Note: SortableNotes,@unchecked Sendable {
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
         self.cardColor = try container.decode(String.self, forKey: .cardColor)
         self.note = try container.decode(String.self, forKey: .note)
-        self.date = Date.init(timeIntervalSince1970: try container.decode(Double.self, forKey: .date))
+        self.date = Date()
     }
     
     init(id: UUID? = nil, note: String, cardColor: String,date: Date) {

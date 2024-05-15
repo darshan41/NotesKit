@@ -34,3 +34,33 @@ public protocol CustomModel: Model {
     
     static var schema: String { get }
 }
+
+/// Cool, Very Cool
+public protocol SortableItem: Notable {
+    
+    typealias AProperAssociatedObject =  Decodable & Encodable & Sendable & Comparable
+    
+    associatedtype SortingValue: AProperAssociatedObject
+    associatedtype FilteringValue: AProperAssociatedObject
+    
+    associatedtype T: FieldProperty<Self, SortingValue>
+    associatedtype U: FieldProperty<Self, FilteringValue>
+    
+    var someComparable: T { get }
+    var filterSearchItem: U { get }
+}
+
+extension Modelable {
+    
+    var jsonString: NSString? {
+        let jsonEncoder = JSONEncoder()
+        jsonEncoder.outputFormatting = .prettyPrinted
+        do {
+            let jsonData = try jsonEncoder.encode(self)
+            guard let string = String(data: jsonData, encoding: .utf8) else { return nil }
+            return NSString(string: string)
+        } catch {
+            return nil
+        }
+    }
+}

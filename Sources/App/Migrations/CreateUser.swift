@@ -17,10 +17,12 @@ struct CreateUser: AppMigration {
             .id()
             .field(User.name, .string, .required)
             .field(User.email, .string, .required)
-            .field(User.name, .string, .required)
+            .field(User.userName, .string, .required)
             .field(User.zipcode, .string, .required)
             .field(User.countryCode, .string, .required)
             .field(User.phone, .string, .required)
+            .field(User.createdDate, .date, .required)
+            .field(User.updatedDate, .date, .required)
             .create()
     }
     

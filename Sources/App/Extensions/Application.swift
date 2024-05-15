@@ -25,4 +25,20 @@ public extension Application {
     func has(migrations: any AppMigration...) {
         self.migrations.add(migrations)
     }
+    
+    func controls(controller: RouteCollection) throws {
+        try self.register(collection: controller)
+    }
+    
+    func controls(controllers: RouteCollection...) throws {
+        for controller in controllers {
+            try self.register(collection: controller)
+        }
+    }
+    
+    func controls(controllers: [RouteCollection]) throws {
+        for controller in controllers {
+            try self.register(collection: controller)
+        }
+    }
 }

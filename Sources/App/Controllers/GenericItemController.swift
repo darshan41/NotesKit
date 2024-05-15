@@ -9,7 +9,7 @@ import Vapor
 import Fluent
 import Foundation
 
-open class GenericRouterController<T: Notable>: @unchecked Sendable,VersionedRouteCollection {
+open class GenericItemController<T: Notable>: @unchecked Sendable,VersionedRouteCollection {
     
     private (set)var decoder: JSONDecoder
     

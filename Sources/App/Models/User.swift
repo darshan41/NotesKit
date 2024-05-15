@@ -8,17 +8,26 @@
 import Vapor
 import Fluent
 
-final class User: Modelable,@unchecked Sendable {
+final class User: SortableItem,@unchecked Sendable {
     
     static let schema = "users"
+    
+    typealias T = FieldProperty<User, SortingValue>
+    typealias U = FieldProperty<User, FilteringValue>
+    
+    typealias SortingValue = FilteringValue
+    typealias FilteringValue = Date
+    
     static let name: FieldKey = FieldKey("name")
     static let userName: FieldKey = FieldKey("userName")
     static let email:  FieldKey = FieldKey("email")
     static let phone: FieldKey = FieldKey("phone")
     static let zipcode: FieldKey = FieldKey("zipcode")
     static let countryCode: FieldKey = FieldKey("countryCode")
+    static let createdDate: FieldKey = FieldKey("createdDate")
+    static let updatedDate: FieldKey = FieldKey("updatedDate")
     
-    @ID
+    @ID(key: .id)
     var id: UUID?
     
     @Field(key: name)
@@ -39,6 +48,12 @@ final class User: Modelable,@unchecked Sendable {
     @Field(key: countryCode)
     var countryCode: String
     
+    @Field(key: createdDate)
+    var createdDate: Date
+    
+    @Field(key: updatedDate)
+    var updatedDate: Date
+    
     init() { }
     
     init(
@@ -48,7 +63,9 @@ final class User: Modelable,@unchecked Sendable {
         email: String,
         phone: String,
         zipcode: String,
-        countryCode: String
+        countryCode: String,
+        createdDate: Date?,
+        updatedDate: Date?
     ) {
         self.name = name
         self.userName = userName
@@ -56,10 +73,42 @@ final class User: Modelable,@unchecked Sendable {
         self.phone = phone
         self.zipcode = zipcode
         self.countryCode = countryCode
+        self.createdDate = createdDate ?? Date()
+        self.updatedDate = updatedDate ?? Date()
     }
+    
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.userName = try container.decode(String.self, forKey: .userName)
+        self.email = try container.decode(String.self, forKey: .email)
+        self.phone = try container.decode(String.self, forKey: .phone)
+        self.zipcode = try container.decode(String.self, forKey: .zipcode)
+        self.countryCode = try container.decode(String.self, forKey: .countryCode)
+        self.createdDate = Date()
+        self.updatedDate = Date()
+    }
+    
 }
 
 extension User {
+    
+    fileprivate enum CodingKeys: String,CodingKey {
+        case name
+        case id
+        case userName
+        case email
+        case phone
+        case zipcode
+        case countryCode
+        case createdDate
+        case updatedDate
+    }
+    
+    var someComparable: FluentKit.FieldProperty<User, SortingValue> { self.$updatedDate }
+    
+    var filterSearchItem: FluentKit.FieldProperty<User, FilteringValue> { self.$updatedDate }
         
     func requestUpdate(with newValue: User) -> User {
         return self
@@ -69,3 +118,17 @@ extension User {
         .init(code: status, error: error, data: self)
     }
 }
+
+
+extension User: Comparable {
+    
+    static func < (lhs: User, rhs: User) -> Bool {
+        lhs.updatedDate < rhs.updatedDate
+    }
+    
+    static func == (lhs: User, rhs: User) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+

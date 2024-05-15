@@ -8,22 +8,7 @@
 import Vapor
 import Fluent
 
-/// Cool, Very Cool
-public protocol SortableNotes: Notable {
-    
-    typealias AProperAssociatedObject =  Decodable & Encodable & Sendable & Comparable
-    
-    associatedtype SortingValue: AProperAssociatedObject
-    associatedtype FilteringValue: AProperAssociatedObject
-    
-    associatedtype T: FieldProperty<Self, SortingValue>
-    associatedtype U: FieldProperty<Self, FilteringValue>
-    
-    var someComparable: T { get }
-    var filterSearchItem: U { get }
-}
-
-class NotesRouterController<T: SortableNotes, U: FieldProperty<T, T.FilteringValue>>: GenericRouterController<T> where T.FilteringValue == U.Value {
+class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
     
     private let search: String = "search"
     private let queryString: String = "query"
@@ -69,7 +54,7 @@ class NotesRouterController<T: SortableNotes, U: FieldProperty<T, T.FilteringVal
     }
 }
 
-extension NotesRouterController {
+extension NotesController {
     
     @discardableResult
     func getAllNotesInSorted() -> Route {

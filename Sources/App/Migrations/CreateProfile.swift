@@ -17,6 +17,8 @@ struct CreateProfile: AppMigration {
             .id()
             .field(Profile.profileImage, .string, .required)
             .field(Profile.profileName, .string, .required)
+            .field(Profile.createdDate, .date, .required)
+            .field(Profile.updatedDate, .date, .required)
             .create()
     }
     
