@@ -11,10 +11,11 @@ import Fluent
 public protocol ErrorShowable: Error,LocalizedError,Codable {
     var identifier: String { get }
     var reason: String { get }
+    var isUserShowableErrorMessage: Bool { get }
 }
 
 extension ErrorShowable {
-    public var identifier: String { "\(Self.self)" }
+//    public var identifier: String { "\(Self.self)" }
 }
 
 public typealias NoteEventLoopFuture<T: Model & Content> = EventLoopFuture<AppResponse<T>>

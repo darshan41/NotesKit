@@ -20,7 +20,7 @@ public class AppDB {
             database: Environment.get("DATABASE_NAME") ?? "vapor_database",
             tls: .prefer(try .init(configuration: .clientDefault)))
         ), as: .psql)
-        app.uses(middleware: RequestLoggingMiddleware())
+        app.uses(middleware: CustomErrorMiddleware.default(environment: try Environment.detect()),at: .end)
         app.has(migrations: CreateNote(),CreateUser(),CreateProfile())
         app.logger.logLevel = .debug
         try routes(app)

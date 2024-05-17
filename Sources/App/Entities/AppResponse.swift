@@ -9,34 +9,6 @@ import Foundation
 import Fluent
 import Vapor
 
-public protocol CodedStringable: Codable,Sendable {
-    
-    var stringifiedValue: String { get }
-}
-
-public enum ErrorMessage: CodedStringable, Error, LocalizedError {
-    
-    public var errorDescription: String? { stringifiedValue }
-        
-    static let useSorting: Bool = true
-    
-    public var stringifiedValue: String {
-        switch self {
-        case .customString(let string):
-            return string
-        case .errorMessages(let dictionary):
-            if ErrorMessage.useSorting {
-                return dictionary.sortedOnKeysJoinedTogetherByValue.joined(separator: "\n")
-            } else {
-                return dictionary.stringifiedJoinedByLineBreakSeperator
-            }
-        }
-    }
-    
-    case customString(String)
-    case errorMessages([String: String])
-}
-
 public protocol NoteResponseEncodable {
     
     associatedtype T: Content
@@ -45,14 +17,26 @@ public protocol NoteResponseEncodable {
 
 public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content {
     
+    public enum CodingKeys: String,CodingKey {
+        case code
+        case error
+        case data
+        case isServerGeneratedError
+        case isUserShowableErrorMessage
+        case identifier
+        case debugErrorDescription
+    }
+    
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: AppResponse<T>.CodingKeys.self)
         try container.encode(self.code, forKey: .code)
-        let error = self.error?.stringifiedValue
-        try container.encodeIfPresent(error, forKey: .error)
+        try container.encodeIfPresent(error?.reason, forKey: .error)
+        try container.encodeIfPresent(error?.identifier, forKey: .identifier)
+        try container.encodeIfPresent(error?.debugErrorDescription, forKey: .debugErrorDescription)
         try container.encodeIfPresent(self.data, forKey: .data)
         if error != nil {
-            try container.encodeIfPresent(self.isUserShowableErrorMessage || error == nil, forKey: .isUserShowableErrorMessage)
+            try container.encode(self.isServerGeneratedError, forKey: .isServerGeneratedError)
+            try container.encode(self.isUserShowableErrorMessage, forKey: .isUserShowableErrorMessage)
         }
     }
     
@@ -62,17 +46,31 @@ public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,C
             try response.content.encode(self)
             return request.eventLoop.future(response)
         } catch let error {
-            return request.eventLoop.future(error: ErrorMessage.customString(error.localizedDescription))
+            return request.eventLoop.future(error: ErrorMessage.customString(error))
         }
     }
     
     public let code: HTTPResponseStatus
     public let error: ErrorMessage?
     public let data: T?
+    public private (set)var isServerGeneratedError: Bool = false
     public private (set)var isUserShowableErrorMessage: Bool = false
+    private var identifier: String? = nil
+    private var debugErrorDescription: String? = nil
     
-    public mutating func settingAsUserErrorShowable() {
-        isUserShowableErrorMessage = true
+    public init(
+        code: HTTPResponseStatus,
+        error: ErrorMessage?,
+        data: T?,
+        isServerGeneratedError: Bool = false
+    ) {
+        self.code = code
+        self.error = error
+        self.data = data
+        self.isServerGeneratedError = isServerGeneratedError
+        self.isUserShowableErrorMessage = (error?.value.isUserShowableErrorMessage ?? false)
+        self.identifier = nil
+        self.debugErrorDescription = nil
     }
 }
 
@@ -89,3 +87,4 @@ extension NoteResponseEncodable {
         }
     }
 }
+

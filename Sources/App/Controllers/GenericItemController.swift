@@ -67,7 +67,7 @@ open class GenericItemController<T: Notable>: @unchecked Sendable,VersionedRoute
                     AppResponse<T>(code: .created, error: nil, data: note)
                 }
             } catch {
-                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error.localizedDescription), data: nil))
+                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
             }
         }
     }
@@ -141,7 +141,7 @@ open class GenericItemController<T: Notable>: @unchecked Sendable,VersionedRoute
                 }
                 return mapped
             } catch {
-                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error.localizedDescription), data: nil))
+                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
             }
         }
     }

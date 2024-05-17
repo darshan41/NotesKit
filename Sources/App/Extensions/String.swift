@@ -22,8 +22,3 @@ extension String? {
         uuid as? T.IDValue
     }
 }
-
-extension String: CodedStringable {
-    
-    public var stringifiedValue: String  { self }
-}

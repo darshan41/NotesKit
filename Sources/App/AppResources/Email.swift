@@ -19,7 +19,7 @@ public struct Email: Hashable, Equatable, CustomStringConvertible, Sendable, Cod
     
     public init(emailString: String) throws {
         guard let atIndex = emailString.firstIndex(of: "@") else {
-            throw CustomEmailError.invalidEmailFormat
+            throw CustomEmailError.invalidEmailFormat as ErrorShowable
         }
         let prefixSubstring = emailString.prefix(upTo: atIndex)
         let domainSubstring = emailString.suffix(from: emailString.index(after: atIndex))
@@ -101,11 +101,15 @@ extension Email {
 
 extension Email {
     
-    public enum CustomEmailError: ErrorShowable,CodedStringable {
+    public enum CustomEmailError: ErrorShowable {
         
-        public var reason: String { stringifiedValue }
-        public var stringifiedValue: String { self.showableErrorDescription }
-        public var showableErrorDescription: String {
+        public var isUserShowableErrorMessage: Bool { true }
+        
+        public var identifier: String {
+            return "\(Self.self)"
+        }
+        
+        public var reason: String {
             switch self {
             case .invalidEmailFormat:
                 "The Email Format is Invalid Please provide proper email as per Standards"
