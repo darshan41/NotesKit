@@ -8,6 +8,15 @@
 import Vapor
 import Fluent
 
+public protocol ErrorShowable: Error,LocalizedError,Codable {
+    var identifier: String { get }
+    var reason: String { get }
+}
+
+extension ErrorShowable {
+    public var identifier: String { "\(Self.self)" }
+}
+
 public typealias NoteEventLoopFuture<T: Model & Content> = EventLoopFuture<AppResponse<T>>
 public typealias NotesEventLoopFuture<T: Model & Content> = EventLoopFuture<AppResponse<[T]>>
 

@@ -108,7 +108,7 @@ open class GenericItemController<T: Notable>: @unchecked Sendable,VersionedRoute
                     if let wrapped {
                         let value = wrapped
                             .delete(on: req.db)
-                            .transform(to: AppResponse<T>(code: .created, error: nil, data: wrapped))
+                            .transform(to: AppResponse<T>(code: .ok, error: nil, data: wrapped))
                         return value
                     } else {
                         return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
@@ -131,8 +131,8 @@ open class GenericItemController<T: Notable>: @unchecked Sendable,VersionedRoute
                         let value = wrapped
                             .requestUpdate(with: note)
                             .save(on: req.db)
-                            .map { value in
-                                AppResponse<T>(code: .created, error: nil, data: note)
+                            .map { _ in
+                                AppResponse<T>(code: .accepted, error: nil, data: wrapped)
                             }
                         return value
                     } else {

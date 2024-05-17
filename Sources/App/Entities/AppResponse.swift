@@ -9,13 +9,15 @@ import Foundation
 import Fluent
 import Vapor
 
-public protocol CodedStringable: Codable {
+public protocol CodedStringable: Codable,Sendable {
     
     var stringifiedValue: String { get }
 }
 
-public enum ErrorMessage: CodedStringable, Error {
+public enum ErrorMessage: CodedStringable, Error, LocalizedError {
     
+    public var errorDescription: String? { stringifiedValue }
+        
     static let useSorting: Bool = true
     
     public var stringifiedValue: String {
@@ -60,7 +62,7 @@ public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,C
             try response.content.encode(self)
             return request.eventLoop.future(response)
         } catch let error {
-            return request.eventLoop.future(error: error)
+            return request.eventLoop.future(error: ErrorMessage.customString(error.localizedDescription))
         }
     }
     
@@ -85,34 +87,5 @@ extension NoteResponseEncodable {
             }
             return data
         }
-    }
-}
-
-extension Dictionary<String,String> {
-    
-    var intified: [Dictionary<Int, String>.Element] {
-        self.compactMap { dict -> Dictionary<Int,String>.Element? in
-            guard let intified = Int(dict.key) else { return nil }
-            return Dictionary<Int,String>.Element(key: intified, value: dict.value)
-        }
-    }
-    
-    var sortedOnKeys: [Dictionary<String, String>.Element] {
-        self.sorted(by: { $0.key < $1.key })
-    }
-    
-    var stringifiedJoinedByLineBreakSeperator: String {
-        map({ $0.key + " " + $0.value }).joined(separator: "\n")
-    }
-    
-    var sortedOnKeysJoinedTogetherByValue: [String] {
-        sortedOnKeys.map { $0.key + " " + $0.value }
-    }
-}
-
-extension Array where Element == Dictionary<Int,String>.Element {
-    
-    var intiSorted: [Dictionary<Int, String>.Element] {
-        sorted(by: { $0.key < $1.key })
     }
 }

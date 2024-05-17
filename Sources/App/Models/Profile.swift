@@ -39,7 +39,6 @@ final class Profile: SortableItem,@unchecked Sendable {
     @Field(key: updatedDate)
     var updatedDate: Date
     
-    
     init() { }
     
     init(profileName: String,profileImage: String,updatedDate: Date?,createdDate: Date?) {
@@ -48,13 +47,12 @@ final class Profile: SortableItem,@unchecked Sendable {
         self.createdDate = createdDate ?? Date()
         self.updatedDate = updatedDate ?? Date()
     }
- 
     
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
+//        self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
         self.profileName = try container.decode(String.self, forKey: .profileName)
-        self.profileImage = (try? container.decode(String.self, forKey: .profileName)) ?? ""
+        self.profileImage = (try? container.decode(String.self, forKey: .profileImage)) ?? ""
         self.createdDate = Date()
         self.updatedDate = Date()
     }
@@ -67,6 +65,9 @@ extension Profile {
     var filterSearchItem: FluentKit.FieldProperty<Profile, SortingValue> { self.$createdDate }
     
     func requestUpdate(with newValue: Profile) -> Profile {
+        self.profileName = newValue.profileName
+        self.profileImage = newValue.profileImage
+        self.updatedDate = Date()
         return self
     }
     

@@ -37,7 +37,7 @@ final class User: SortableItem,@unchecked Sendable {
     var userName: String
     
     @Field(key: email)
-    var email: String
+    var email: Email
     
     @Field(key: phone)
     var phone: String
@@ -60,7 +60,7 @@ final class User: SortableItem,@unchecked Sendable {
         id: UUID? = nil,
         name: String,
         userName: String,
-        email: String,
+        email: Email,
         phone: String,
         zipcode: String,
         countryCode: String,
@@ -79,10 +79,10 @@ final class User: SortableItem,@unchecked Sendable {
     
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
+//        self.id = try container.decodeIfPresent(UUID.self, forKey: .id)
         self.name = try container.decode(String.self, forKey: .name)
         self.userName = try container.decode(String.self, forKey: .userName)
-        self.email = try container.decode(String.self, forKey: .email)
+        self.email = try container.decode(Email.self, forKey: .email)
         self.phone = try container.decode(String.self, forKey: .phone)
         self.zipcode = try container.decode(String.self, forKey: .zipcode)
         self.countryCode = try container.decode(String.self, forKey: .countryCode)
@@ -111,6 +111,12 @@ extension User {
     var filterSearchItem: FluentKit.FieldProperty<User, FilteringValue> { self.$updatedDate }
         
     func requestUpdate(with newValue: User) -> User {
+        self.name = newValue.name
+        self.countryCode = newValue.countryCode
+        self.zipcode = newValue.zipcode
+        self.phone = newValue.phone
+        self.email = newValue.email
+        self.userName = newValue.userName
         return self
     }
     
