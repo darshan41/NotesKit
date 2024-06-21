@@ -1,15 +1,14 @@
 //
-//  UsersController.swift
+//  GenericUsersController.swift
 //
 //
 //  Created by Darshan S on 15/05/24.
 //
 
-
 import Vapor
 import Fluent
 
-class UsersController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
+class GenericUsersController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
     
     private let userID: String = "userID"
     
@@ -27,14 +26,6 @@ class UsersController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: G
     
     override func generateUnableToFind(forRequested id: T.IDValue) -> String {
         "Unable to find the user for requested id: \(id)"
-    }
-    
-    func generateUnableToFilter(forRequested fieldValue: String) -> String {
-        var param = fieldValue
-        if let firstChar = param.first {
-            param.replaceSubrange(param.startIndex..<param.index(after: param.startIndex), with: String(firstChar).capitalized)
-        }
-        return "\(param) Value not present to filter, must have \(fieldValue) Field."
     }
     
     override func apiPathComponent() -> [PathComponent] {

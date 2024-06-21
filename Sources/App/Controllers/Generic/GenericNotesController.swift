@@ -1,5 +1,5 @@
 //
-//  NotesRouterController.swift
+//  GenericNotesController.swift
 //
 //
 //  Created by Darshan S on 13/05/24.
@@ -8,13 +8,15 @@
 import Vapor
 import Fluent
 
-//@available(*, unavailable)
-class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
+@available(*, unavailable)
+class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
     
     private let search: String = "search"
     private let queryString: String = "query"
     private let sorted: String = "sorted"
     private let filter: String = "filter"
+    private let sortOrder: String = "sortOrder"
+    private let ascending: String = "ascending"
     
     override init(
         app: Application,
@@ -32,14 +34,6 @@ class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: G
     
     override func generateUnableToFind(forRequested id: T.IDValue) -> String {
         "Unable to find the note for requested id: \(id)"
-    }
-    
-    func generateUnableToFilter(forRequested fieldValue: String) -> String {
-        var param = fieldValue
-        if let firstChar = param.first {
-            param.replaceSubrange(param.startIndex..<param.index(after: param.startIndex), with: String(firstChar).capitalized)
-        }
-        return "\(param) Value not present to filter, must have \(fieldValue) Field."
     }
     
     override func apiPathComponent() -> [PathComponent] {
@@ -65,7 +59,8 @@ class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: G
     @discardableResult
     func getAllNotesInSorted() -> Route {
         app.get(apiPathComponent().byAdding(.constant(sorted))) { req -> NotesEventLoopFuture in
-            T.query(on: req.db).sort(\.someComparable).all().map { results in
+            let isAscending = req.query[self.sortOrder] == self.ascending
+            return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
                 AppResponse(code: .ok, error: nil, data: results)
             }
         }
@@ -75,7 +70,7 @@ class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: G
     func getAllNotesInFiltered() -> Route {
         app.get(apiPathComponent().byAdding(.constant(filter))) { req -> NotesEventLoopFuture<T> in
             guard let searchTerm = req.query[U.Value.self, at: self.queryString] else {
-                return req.eventLoop.future(AppResponse<[T]>(code: .badRequest, error: .customString(self.generateUnableToFilter(forRequested: self.queryString)), data: nil))
+                return req.eventLoop.future(AppResponse<[T]>(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), data: nil))
             }
             return T.query(on: req.db).group(.or) { or in
                 or.filter(\.filterSearchItem == searchTerm)
@@ -85,8 +80,3 @@ class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: G
         }
     }
 }
-//
-//class NotesController {
-//    
-//}
-//NotesController<Note,FieldProperty<Note, Note.FilteringValue>>(app: app, version: version)

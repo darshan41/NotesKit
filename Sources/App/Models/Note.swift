@@ -101,7 +101,7 @@ extension Note {
 extension Note: Comparable {
     
     static func < (lhs: Note, rhs: Note) -> Bool {
-        lhs.date < rhs.date
+        lhs.date > rhs.date
     }
     
     static func == (lhs: Note, rhs: Note) -> Bool {

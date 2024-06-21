@@ -1,5 +1,5 @@
 //
-//  Router.swift
+//  GenericItemController.swift
 //
 //
 //  Created by Darshan S on 12/05/24.
@@ -9,53 +9,15 @@ import Vapor
 import Fluent
 import Foundation
 
-open class GenericItemController<T: Notable>: @unchecked Sendable,VersionedRouteCollection {
+open class GenericItemController<T: Notable>: GenericRootController<T> {
     
-    private (set)var decoder: JSONDecoder
-    
-    private (set)var app: Application
-    private (set)open var version: APIVersion
-        
-    public init(
-        app: Application,
-        version: APIVersion,
-        decoder: JSONDecoder = JSONDecoder()
-    ) {
-        self.app = app
-        self.version = version
-        self.decoder = decoder
-    }
-    
-    open func boot(routes: any Vapor.RoutesBuilder) throws {
+    open override func boot(routes: any Vapor.RoutesBuilder) throws {
         routes.add(getAllCodableObjects())
         routes.add(postCreateCodableObject())
         routes.add(getSpecificCodableObjectHavingID())
         routes.add(deleteTheCodableObject())
         routes.add(putTheCodableObject())
-    }
-    
-    open func generateUnableToFind(forRequested id: T.IDValue) -> String {
-        "Unable to find the item for requested id: \(id)"
-    }
-    
-    /// By Default All POST and Get use this.... as last path.
-    /// - Returns: PathComponent
-    /// eg: http://127.0.0.1:8080/api/v1/note
-    open func apiPathComponent() -> [PathComponent] {
-        version.apiPath
-    }
-    
-    /// The Query Components for DELETE,GET(with id) or Put
-    /// - Returns: PathComponent
-    /// eg: http://127.0.0.1:8080/api/v1/note/:id
-    open func pathVariableComponents() -> [PathComponent] {
-        return []
-    }
-    
-    /// Combines the apiPathComponent() and pathVariableComponents() to build, use overides carefully.
-    /// - Returns: PathComponent
-    open func finalComponents() -> [PathComponent] {
-        apiPathComponent() + pathVariableComponents()
+        try super.boot(routes: routes)
     }
     
     @discardableResult

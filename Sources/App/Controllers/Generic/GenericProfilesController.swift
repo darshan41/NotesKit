@@ -1,5 +1,5 @@
 //
-//  ProfilesController.swift
+//  GenericProfilesController.swift
 //
 //
 //  Created by Darshan S on 15/05/24.
@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-class ProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
+class GenericProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
     
     private let profileID: String = "profileID"
     
@@ -26,14 +26,6 @@ class ProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>
     
     override func generateUnableToFind(forRequested id: T.IDValue) -> String {
         "Unable to find the profile for requested id: \(id)"
-    }
-    
-    func generateUnableToFilter(forRequested fieldValue: String) -> String {
-        var param = fieldValue
-        if let firstChar = param.first {
-            param.replaceSubrange(param.startIndex..<param.index(after: param.startIndex), with: String(firstChar).capitalized)
-        }
-        return "\(param) Value not present to filter, must have \(fieldValue) Field."
     }
     
     override func apiPathComponent() -> [PathComponent] {
