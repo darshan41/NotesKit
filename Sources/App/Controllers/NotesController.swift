@@ -8,6 +8,7 @@
 import Vapor
 import Fluent
 
+//@available(*, unavailable)
 class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
     
     private let search: String = "search"
@@ -52,9 +53,14 @@ class NotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: G
     override func pathVariableComponents() -> [PathComponent] {
         [.parameter(.id)]
     }
-}
-
-extension NotesController {
+    
+    override func getAllCodableObjects() -> Route {
+        app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
+            T.query(on: req.db).all().map { results in
+                AppResponse(code: .ok, error: nil, data: results)
+            }
+        }
+    }
     
     @discardableResult
     func getAllNotesInSorted() -> Route {
@@ -79,3 +85,8 @@ extension NotesController {
         }
     }
 }
+//
+//class NotesController {
+//    
+//}
+//NotesController<Note,FieldProperty<Note, Note.FilteringValue>>(app: app, version: version)

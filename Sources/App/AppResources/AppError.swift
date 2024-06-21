@@ -129,7 +129,7 @@ public extension ErrorMessage {
     
     func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
-        if Self.inDebugMode {
+        if ErrorMessage.inDebugMode {
             try container.encode(EncodeWrapper(
                 debugErrorDescription: appErrorSource.errorCodeStatement,
                 error: reason,
@@ -166,14 +166,25 @@ public extension ErrorMessage {
         column: UInt = #column,
         range: Range<UInt>? = nil
     ) -> ErrorMessage {
-        ErrorMessage.init(
-            .customError(error.asErrorShowble),
-            file: file,
-            function: function,
-            line: line,
-            column: column,
-            range: range
-        )
+        if ErrorMessage.inDebugMode {
+            return ErrorMessage.init(
+                .customError(error.asErrorShowble),
+                file: file,
+                function: function,
+                line: line,
+                column: column,
+                range: range
+            )
+        } else {
+            return ErrorMessage.init(
+                .customError(error.asErrorShowble),
+                file: file,
+                function: function,
+                line: line,
+                column: column,
+                range: range
+            )
+        }
     }
     
     static func customErrors(
@@ -256,6 +267,11 @@ fileprivate struct EncodeWrapper: Codable {
 extension Error {
     
     var asErrorShowble: ErrorShowable {
-        (self as? ErrorShowable) ?? ErrorMessage.AppError.custom("Something Went Wrong!")
+        if ErrorMessage.inDebugMode {
+            let detailedDescription: String = "localizedDescription: \(self.localizedDescription) \n other description: \((self as NSError).description)"
+            return (self as? ErrorShowable) ?? ErrorMessage.AppError.custom(detailedDescription)
+        } else {
+            return (self as? ErrorShowable) ?? ErrorMessage.AppError.custom("Something Went Wrong!")
+        }
     }
 }

@@ -18,6 +18,7 @@ struct CreateNote: AppMigration {
             .field(Note.note, .string, .required)
             .field(Note.cardColor, .string, .required)
             .field(Note.date, .date, .required)
+            .field(Note.userId,.uuid,.required)
             .create()
     }
     

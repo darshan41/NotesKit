@@ -12,7 +12,7 @@ open class AppDecoder: @unchecked Sendable {
     static let shared: AppDecoder = AppDecoder()
     
     lazy var iso8601JSONDeocoder = {
-        let decoder = JSONDecoder()
+        let decoder = AppContentDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()

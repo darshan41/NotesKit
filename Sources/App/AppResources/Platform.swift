@@ -21,5 +21,4 @@ public extension Platform {
     enum SupportedPlatform: String,Codable {
         case iOS,android
     }
-    
 }
