@@ -59,7 +59,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     open func getSpecificCodableObjectHavingID() -> Route {
         app.get(finalComponents()) { req -> NoteEventLoopFuture<T> in
             guard let idValue = req.parameters.getCastedTID(T.self) else {
-                return req.eventLoop.future(error: Abort(.notFound))
+                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
             }
             return T.find(idValue, on: req.db).flatMap { value in
                 if let wrapped = value {
@@ -75,7 +75,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     open func deleteTheCodableObject() -> Route {
         app.delete(finalComponents()) { req -> NoteEventLoopFuture<T> in
             guard let idValue = req.parameters.getCastedTID(T.self) else {
-                return req.eventLoop.future(error: Abort(.notFound))
+                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .DELETE)), data: nil))
             }
             return T.find(idValue, on: req.db)
                 .flatMap { wrapped -> NoteEventLoopFuture<T>  in
@@ -85,7 +85,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
                             .transform(to: AppResponse<T>(code: .ok, error: nil, data: wrapped))
                         return value
                     } else {
-                        return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                        return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
                     }
                 }
         }
@@ -97,7 +97,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
             do {
                 let note = try req.content.decode(T.self, using: self.decoder)
                 guard let idValue = req.parameters.getCastedTID(T.self) ?? note.id else {
-                    return req.eventLoop.future(error: Abort(.notFound))
+                    return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))
                 }
                 let found = T.find(idValue, on: req.db)
                 let mapped = found.flatMap { wrapped -> NoteEventLoopFuture<T>  in
