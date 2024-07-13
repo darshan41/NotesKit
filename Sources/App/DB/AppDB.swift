@@ -11,19 +11,57 @@ import FluentPostgresDriver
 
 public class AppDB {
     
-    public class func configureAppRunningPostgress(_ app: Application) async throws {
-        app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
-            hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-            port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? SQLPostgresConfiguration.ianaPortNumber,
-            username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-            password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-            database: Environment.get("DATABASE_NAME") ?? "vapor_database",
-            tls: .prefer(try .init(configuration: .clientDefault)))
-        ), as: .psql)
-        app.uses(middleware: CustomErrorMiddleware.default(environment: try Environment.detect()),at: .end)
-        app.has(migrations: CreateNote(),CreateUser(),CreateProfile())
+    public class func configureAppRunningPostgress(
+        _ app: Application
+    ) async throws {
+        app.databases.use(
+            DatabaseConfigurationFactory.postgres(
+                configuration: .init(
+                    hostname: Environment.get(
+                        "DATABASE_HOST"
+                    ) ?? "localhost",
+                    port: Environment.get(
+                        "DATABASE_PORT"
+                    ).flatMap(
+                        Int.init(
+                            _:
+                        )
+                    ) ?? SQLPostgresConfiguration.ianaPortNumber,
+                    username: Environment.get(
+                        "DATABASE_USERNAME"
+                    ) ?? "vapor_username",
+                    password: Environment.get(
+                        "DATABASE_PASSWORD"
+                    ) ?? "vapor_password",
+                    database: Environment.get(
+                        "DATABASE_NAME"
+                    ) ?? "vapor_database",
+                    tls: .prefer(
+                        try .init(
+                            configuration: .clientDefault
+                        )
+                    )
+                )
+            ),
+            as: .psql
+        )
+        
+        app.uses(
+            middleware: CustomErrorMiddleware.default(
+                environment: try Environment.detect()
+            ),
+            at: .end
+        )
+        
+        app.has(
+            migrations: CreateNote(),
+            CreateUser(),
+            CreateProfile()
+        )
         app.logger.logLevel = .debug
-        try routes(app)
-        try app.autoMigrate().wait()
+        try routes(
+            app
+        )
+        try await app.autoMigrate().get()
     }
 }

@@ -74,3 +74,7 @@ extension Modelable {
         }
     }
 }
+
+extension ParentProperty: Encodable { }
+
+extension ChildrenProperty: Encodable { }

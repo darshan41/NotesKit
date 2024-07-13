@@ -17,7 +17,7 @@ class GenericUsersController<T: SortableItem, U: FieldProperty<T, T.FilteringVal
         version: APIVersion,
         decoder: JSONDecoder = AppDecoder.shared.iso8601JSONDeocoder
     ) {
-        super.init(app: app, version: version, decoder: AppDecoder.shared.iso8601JSONDeocoder)
+        super.init(app: app, version: version, decoder: decoder)
     }
     
     override func boot(routes: any RoutesBuilder) throws {

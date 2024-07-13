@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-final class User: SortableItem,@unchecked Sendable {
+final class User: SortableItem,@unchecked Sendable,Encodable {
     
     static let schema = "users"
     
@@ -89,6 +89,10 @@ final class User: SortableItem,@unchecked Sendable {
         self.updatedDate = Date()
     }
     
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+    }
 }
 
 extension User {
@@ -108,7 +112,7 @@ extension User {
     var someComparable: FluentKit.FieldProperty<User, SortingValue> { self.$updatedDate }
     
     var filterSearchItem: FluentKit.FieldProperty<User, FilteringValue> { self.$updatedDate }
-        
+    
     func requestUpdate(with newValue: User) -> User {
         self.name = newValue.name
         self.countryCode = newValue.countryCode

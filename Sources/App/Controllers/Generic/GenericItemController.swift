@@ -9,15 +9,27 @@ import Vapor
 import Fluent
 import Foundation
 
-open class GenericItemController<T: Notable>: GenericRootController<T> {
+open class GenericItemController<T: Notable>: GenericRootController<T>,VersionedRouteCollection {
     
-    open override func boot(routes: any Vapor.RoutesBuilder) throws {
+    open func boot(routes: any Vapor.RoutesBuilder) throws {
+        print("Adding Routes on \(Self.self)")
         routes.add(getAllCodableObjects())
         routes.add(postCreateCodableObject())
         routes.add(getSpecificCodableObjectHavingID())
         routes.add(deleteTheCodableObject())
         routes.add(putTheCodableObject())
-        try super.boot(routes: routes)
+    }
+    
+    override func apiPathComponent() -> [PathComponent] {
+        super.apiPathComponent()
+    }
+    
+    override func finalComponents() -> [PathComponent] {
+        super.finalComponents()
+    }
+    
+    override func pathVariableComponents() -> [PathComponent] {
+        super.pathVariableComponents()
     }
     
     @discardableResult

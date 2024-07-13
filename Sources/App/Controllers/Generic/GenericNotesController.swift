@@ -48,14 +48,6 @@ class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringVal
         [.parameter(.id)]
     }
     
-    override func getAllCodableObjects() -> Route {
-        app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
-            T.query(on: req.db).all().map { results in
-                AppResponse(code: .ok, error: nil, data: results)
-            }
-        }
-    }
-    
     @discardableResult
     func getAllNotesInSorted() -> Route {
         app.get(apiPathComponent().byAdding(.constant(sorted))) { req -> NotesEventLoopFuture in

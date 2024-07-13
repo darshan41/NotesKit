@@ -112,7 +112,7 @@ extension Email {
         public var reason: String {
             switch self {
             case .invalidEmailFormat:
-                "The Email Format is Invalid Please provide proper email as per Standards"
+                "The Email Format is Invalid please provide proper email as per Standards"
             }
         }
         

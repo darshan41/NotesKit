@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-open class GenericRootController<T: Notable>: @unchecked Sendable,VersionedRouteCollection {
+open class GenericRootController<T: Notable>: @unchecked Sendable {
     
     private (set)var decoder: JSONDecoder
     
@@ -24,9 +24,7 @@ open class GenericRootController<T: Notable>: @unchecked Sendable,VersionedRoute
         self.version = version
         self.decoder = decoder
     }
-    
-    open func boot(routes: any Vapor.RoutesBuilder) throws { }
-    
+        
     open func generateUnableToFind(forRequested id: T.IDValue) -> String {
         "Unable to find the item for requested id: \(id)"
     }

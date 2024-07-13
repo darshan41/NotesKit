@@ -8,6 +8,9 @@
 import Vapor
 import Fluent
 
+
+protocol CustomEncodable { }
+
 final class Note: SortableItem,@unchecked Sendable {
     
     typealias T = FieldProperty<Note, SortingValue>
@@ -77,6 +80,7 @@ final class Note: SortableItem,@unchecked Sendable {
         case cardColor
         case note
         case date
+        case user
         case userId
     }
     
