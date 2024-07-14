@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-class NotesController: GenericItemController<Note> {
+class NotesController: GenericRootController<Note>,VersionedRouteCollection {
     
     private typealias T = Note
     
@@ -20,11 +20,13 @@ class NotesController: GenericItemController<Note> {
     private let isLikeWise: String = "isLikeWise"
     private let filter: String = "filter"
     
+    override init(app: Application, version: APIVersion, decoder: JSONDecoder = JSONDecoder()) {
+        super.init(app: app, version: version)
+    }
     
-    override func boot(routes: any Vapor.RoutesBuilder) throws {
-        try super.boot(routes: routes)
-        routes.add(getAllNotesInSorted())
-        routes.add(getAllNotesInFiltered())
+    func boot(routes: any RoutesBuilder) throws {
+        routes.add(getAllCodableObjects())
+        routes.add(getSpecificCodableObjectHavingID())
     }
     
     override func generateUnableToFind(forRequested id: UUID) -> String {
@@ -41,6 +43,29 @@ class NotesController: GenericItemController<Note> {
     
     override func pathVariableComponents() -> [PathComponent] {
         [.parameter(.id)]
+    }
+    
+    func getAllCodableObjects() -> Route {
+        app.get(finalComponents()) { req -> NotesEventLoopFuture in
+            return T.query(on: req.db).all().map { results in
+                AppResponse(code: .ok, error: nil, data: results)
+            }
+        }
+    }
+    
+    func getSpecificCodableObjectHavingID() -> Route {
+        app.get(finalComponents()) { req -> NoteEventLoopFuture<T> in
+            guard let idValue = req.parameters.getCastedTID(T.self) else {
+                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
+            }
+            return T.find(idValue, on: req.db).flatMap { value in
+                if let wrapped = value {
+                    return req.eventLoop.future(AppResponse<T>(code: .ok, error: nil, data: wrapped))
+                } else {
+                    return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                }
+            }
+        }
     }
 }
 

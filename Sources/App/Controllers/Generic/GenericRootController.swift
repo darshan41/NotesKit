@@ -33,6 +33,10 @@ open class GenericRootController<T: Notable>: @unchecked Sendable {
         "ID for path to \(method.rawValue.lowercased()) for an \(type) item must be present, eg: type/{particular-id-for-\(String.init(describing: type).lowercased())item.}"
     }
     
+    open func generateUnableToFindAny(forRequested id: UUID,for method: HTTPMethod) -> String {
+        "ID for path to \(method.rawValue.lowercased()) for an \(id) item must be present, eg: type/{particular-id-for-\(String.init(describing: id).lowercased())item.}"
+    }
+    
     /// By Default All POST and Get use this.... as last path.
     /// - Returns: PathComponent
     /// eg: http://127.0.0.1:8080/api/v1/note

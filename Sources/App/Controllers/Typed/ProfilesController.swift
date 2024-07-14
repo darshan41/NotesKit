@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-class GenericProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
+class ProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
     
     private let profileID: String = "profileID"
     

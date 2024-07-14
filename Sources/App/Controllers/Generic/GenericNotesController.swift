@@ -50,25 +50,31 @@ class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringVal
     
     @discardableResult
     func getAllNotesInSorted() -> Route {
-        app.get(apiPathComponent().byAdding(.constant(sorted))) { req -> NotesEventLoopFuture in
-            let isAscending = req.query[self.sortOrder] == self.ascending
-            return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
-                AppResponse(code: .ok, error: nil, data: results)
-            }
+        app.get(apiPathComponent().byAdding(.constant(sorted)),use: getAllNotesInSorted)
+    }
+    
+    @Sendable
+    func getAllNotesInSorted(_ req: Request) -> NotesEventLoopFuture<T> {
+        let isAscending = req.query[self.sortOrder] == self.ascending
+        return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
+            AppResponse(code: .ok, error: nil, data: results)
         }
     }
     
     @discardableResult
     func getAllNotesInFiltered() -> Route {
-        app.get(apiPathComponent().byAdding(.constant(filter))) { req -> NotesEventLoopFuture<T> in
-            guard let searchTerm = req.query[U.Value.self, at: self.queryString] else {
-                return req.eventLoop.future(AppResponse<[T]>(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), data: nil))
-            }
-            return T.query(on: req.db).group(.or) { or in
-                or.filter(\.filterSearchItem == searchTerm)
-            }.all().map { filteredNotes in
-                AppResponse(code: .ok, error: nil, data: filteredNotes)
-            }
+        app.get(apiPathComponent().byAdding(.constant(filter)),use: getAllNotesInFiltered)
+    }
+    
+    @Sendable
+    func getAllNotesInFiltered(_ req: Request) -> NotesEventLoopFuture<T> {
+        guard let searchTerm = req.query[U.Value.self, at: self.queryString] else {
+            return req.eventLoop.future(AppResponse<[T]>(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), data: nil))
+        }
+        return T.query(on: req.db).group(.or) { or in
+            or.filter(\.filterSearchItem == searchTerm)
+        }.all().map { filteredNotes in
+            AppResponse(code: .ok, error: nil, data: filteredNotes)
         }
     }
 }

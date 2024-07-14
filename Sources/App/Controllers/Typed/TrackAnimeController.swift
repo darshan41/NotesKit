@@ -46,11 +46,14 @@ extension TrackAnimeController {
     
     @discardableResult
     func getAllNotesInSorted() -> Route {
-        app.get(apiPathComponent().byAdding(.constant(sorted))) { req -> NotesEventLoopFuture in
-            let isAscending = req.query[self.sortOrder] == self.ascending
-            return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
-                AppResponse(code: .ok, error: nil, data: results)
-            }
+        app.get(apiPathComponent().byAdding(.constant(sorted)),use: getAllNotesInSortedHandler)
+    }
+    
+    @Sendable
+    private func getAllNotesInSortedHandler(_ req: Request) -> NotesEventLoopFuture<T> {
+        let isAscending = req.query[self.sortOrder] == self.ascending
+        return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
+            AppResponse(code: .ok, error: nil, data: results)
         }
     }
 }
