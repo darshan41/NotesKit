@@ -10,8 +10,6 @@ import Vapor
 
 public final class CustomErrorMiddleware: Middleware {
     
-    private static let allowedToSeeTheSensitiveData: Bool = true
-    
     public static func `default`(environment: Environment) -> ErrorMiddleware {
         return .init { req, error in
             let status: HTTPResponseStatus, reason: String, source: ErrorSource
@@ -21,13 +19,25 @@ public final class CustomErrorMiddleware: Middleware {
                 (reason, status, headers, source) = (debugAbort.reason, debugAbort.status, debugAbort.headers, debugAbort.source ?? .capture())
             case let abort as AbortError:
                 (reason, status, headers, source) = (abort.reason, abort.status, abort.headers, .capture())
-                
             case let debugErr as DebuggableError:
                 (reason, status, headers, source) = (debugErr.reason, .internalServerError, [:], debugErr.source ?? .capture())
-                
+            case let error as AppResponseError:
+                if (environment.isRelease) {
+                    reason = "Something went wrong."
+                    (status, headers, source) = (error.code, [:], .capture())
+                } else {
+                    reason = error.error?.errorDescription ?? error.localizedDescription
+                    (status, headers, source) = (error.code, [:], .capture())
+                }
             default:
-                reason = (environment.isRelease || !allowedToSeeTheSensitiveData) ? "Something went wrong." : (error as NSError).description
-                (status, headers, source) = (.internalServerError, [:], .capture())
+                let error = (error as NSError)
+                if (environment.isRelease) {
+                    reason = "Something went wrong."
+                    (status, headers, source) = (.internalServerError, [:], .capture())
+                } else {
+                    reason = error.description
+                    (status, headers, source) = (.init(statusCode: error.code), [:], .capture())
+                }
             }
             
             // Report the error

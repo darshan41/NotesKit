@@ -61,6 +61,11 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
         }
     }
     
+    @Sendable
+    open func getAllCodableObjectsHandler(_ req: Request) async throws -> AppResponse<[T]> {
+        AppResponse(code: .ok, error: nil, data: try await T.query(on: req.db).all())
+    }
+    
     
     @discardableResult
     open func getSpecificCodableObjectHavingID() -> Route {

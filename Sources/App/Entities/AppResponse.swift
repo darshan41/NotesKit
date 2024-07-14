@@ -15,7 +15,7 @@ public protocol NoteResponseEncodable {
     var data: T? { get }
 }
 
-public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content {
+public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content,AppResponseError {
     
     public enum CodingKeys: String,CodingKey {
         case code
@@ -27,18 +27,31 @@ public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,C
         case debugErrorDescription
     }
     
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.code = try container.decode(HTTPResponseStatus.self, forKey: .code)
+        self.error = try container.decodeIfPresent(ErrorMessage.self, forKey: .error)
+        self.data = try container.decodeIfPresent(T.self, forKey: .data)
+        self.isServerGeneratedError = (try? container.decodeIfPresent(Bool.self, forKey: .isServerGeneratedError)) ?? false
+        self.isUserShowableErrorMessage = (try? container.decodeIfPresent(Bool.self, forKey: .isUserShowableErrorMessage)) ?? false
+    }
+    
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: AppResponse<T>.CodingKeys.self)
         try container.encode(self.code, forKey: .code)
-        try container.encodeIfPresent(error?.reason, forKey: .error)
-        try container.encodeIfPresent(error?.identifier, forKey: .identifier)
-        try container.encodeIfPresent(error?.debugErrorDescription, forKey: .debugErrorDescription)
+        let reason = error?.reason
+        let identifier = error?.identifier
+        let debugErrorDescription = error?.debugErrorDescription
+        try container.encodeIfPresent(reason.isValidString ? reason : nil, forKey: .error)
+        try container.encodeIfPresent(identifier.isValidString ? identifier : nil, forKey: .identifier)
+        try container.encodeIfPresent(debugErrorDescription.isValidString ? debugErrorDescription : nil, forKey: .debugErrorDescription)
         try container.encodeIfPresent(self.data, forKey: .data)
         if error != nil {
             try container.encode(self.isServerGeneratedError, forKey: .isServerGeneratedError)
             try container.encode(self.isUserShowableErrorMessage, forKey: .isUserShowableErrorMessage)
         }
     }
+    
     
     public func encodeResponse(for request: Vapor.Request) -> NIOCore.EventLoopFuture<Vapor.Response> {
         do {
@@ -55,8 +68,11 @@ public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,C
     public let data: T?
     public private (set)var isServerGeneratedError: Bool = false
     public private (set)var isUserShowableErrorMessage: Bool = false
-    private var identifier: String? = nil
-    private var debugErrorDescription: String? = nil
+    
+    public var identifier: String { error?.identifier ?? "" }
+    public var reason: String { error?.reason ?? "" }
+    public var debugErrorDescription: String { error?.debugErrorDescription ?? "" }
+    
     
     public init(
         code: HTTPResponseStatus,
@@ -69,22 +85,9 @@ public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,C
         self.data = data
         self.isServerGeneratedError = isServerGeneratedError
         self.isUserShowableErrorMessage = (error?.value.isUserShowableErrorMessage ?? false)
-        self.identifier = nil
-        self.debugErrorDescription = nil
     }
 }
 
-// MARK: Helper func's
-
-extension NoteResponseEncodable {
-    
-    public var encodeData: T {
-        get throws {
-            guard let data else {
-                throw ErrorMessage.customString("Server Error, Unable to encode data this was not supposed to happen!")
-            }
-            return data
-        }
-    }
+extension String? {
+    var isValidString: Bool { self != nil ? !self!.isEmpty : false }
 }
-

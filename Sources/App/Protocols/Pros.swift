@@ -14,9 +14,18 @@ public protocol ErrorShowable: Error,LocalizedError,Codable {
     var isUserShowableErrorMessage: Bool { get }
 }
 
+public protocol AppResponseError: ErrorShowable {    
+    var isServerGeneratedError: Bool { get }
+    var debugErrorDescription: String { get }
+    var code: HTTPResponseStatus { get }
+    var error: ErrorMessage? { get }
+}
+
+
 extension ErrorShowable {
 //    public var identifier: String { "\(Self.self)" }
 }
+
 
 public typealias NoteEventLoopFuture<T: Model & Content> = EventLoopFuture<AppResponse<T>>
 public typealias NotesEventLoopFuture<T: Model & Content> = EventLoopFuture<AppResponse<[T]>>

@@ -10,7 +10,7 @@ import Fluent
 
 class NotesController: GenericRootController<Note>,VersionedRouteCollection {
     
-    private typealias T = Note
+    typealias T = Note
     
     private let search: String = "search"
     private let queryString: String = "query"
@@ -26,6 +26,7 @@ class NotesController: GenericRootController<Note>,VersionedRouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         routes.add(getAllCodableObjects())
+        routes.add(postCreateCodableObject())
         routes.add(getSpecificCodableObjectHavingID())
     }
     
@@ -106,6 +107,22 @@ extension NotesController {
         }
     }
     
+    @discardableResult
+    func postCreateCodableObject() -> Route {
+        app.post(apiPathComponent(), use: postCreateCodableObjectHandler)
+    }
+    
+    @Sendable
+    func postCreateCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
+        do {
+            let note = try req.content.decode(T.self, using: self.decoder)
+            return note.save(on: req.db).map {
+                AppResponse<T>(code: .created, error: nil, data: note)
+            }
+        } catch {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
+        }
+    }
 }
 
 // MARK: Helper func's
