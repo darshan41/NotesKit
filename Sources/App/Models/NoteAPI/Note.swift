@@ -8,7 +8,6 @@
 import Vapor
 import Fluent
 
-
 protocol CustomEncodable { }
 
 final class Note: SortableItem,@unchecked Sendable {

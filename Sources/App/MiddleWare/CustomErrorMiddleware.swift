@@ -26,7 +26,7 @@ public final class CustomErrorMiddleware: Middleware {
                 (reason, status, headers, source) = (debugErr.reason, .internalServerError, [:], debugErr.source ?? .capture())
                 
             default:
-                reason = (environment.isRelease || !allowedToSeeTheSensitiveData) ? "Something went wrong." : String(describing: error)
+                reason = (environment.isRelease || !allowedToSeeTheSensitiveData) ? "Something went wrong." : (error as NSError).description
                 (status, headers, source) = (.internalServerError, [:], .capture())
             }
             
