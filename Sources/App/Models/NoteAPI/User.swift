@@ -31,25 +31,25 @@ final class User: SortableItem,@unchecked Sendable,Encodable {
     var id: UUID?
     
     @Field(key: name)
-    var name: String
+    var name: Name
     
     @Field(key: userName)
-    var userName: String
+    var userName: UserName
     
     @Field(key: email)
     var email: Email
     
     @Field(key: phone)
-    var phone: String
+    var phone: PhoneNumber
     
     @Children(for: \.$user)
     var notes: [Note]
     
     @Field(key: zipcode)
-    var zipcode: String
+    var zipcode: ZipCode
     
     @Field(key: countryCode)
-    var countryCode: String
+    var countryCode: CountryCode
     
     @Field(key: createdDate)
     var createdDate: Date
@@ -61,12 +61,12 @@ final class User: SortableItem,@unchecked Sendable,Encodable {
     
     init(
         id: UUID? = nil,
-        name: String,
-        userName: String,
+        name: Name,
+        userName: UserName,
         email: Email,
-        phone: String,
-        zipcode: String,
-        countryCode: String,
+        phone: PhoneNumber,
+        zipcode: ZipCode,
+        countryCode: CountryCode,
         createdDate: Date?,
         updatedDate: Date?
     ) {
@@ -82,12 +82,12 @@ final class User: SortableItem,@unchecked Sendable,Encodable {
     
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.name = try container.decode(String.self, forKey: .name)
-        self.userName = try container.decode(String.self, forKey: .userName)
+        self.name = try container.decode(Name.self, forKey: .name)
+        self.userName = try container.decode(UserName.self, forKey: .userName)
         self.email = try container.decode(Email.self, forKey: .email)
-        self.phone = try container.decode(String.self, forKey: .phone)
-        self.zipcode = try container.decode(String.self, forKey: .zipcode)
-        self.countryCode = try container.decode(String.self, forKey: .countryCode)
+        self.phone = try container.decode(PhoneNumber.self, forKey: .phone)
+        self.zipcode = try container.decode(ZipCode.self, forKey: .zipcode)
+        self.countryCode = try container.decode(CountryCode.self, forKey: .countryCode)
         self.createdDate = Date()
         self.updatedDate = Date()
     }
@@ -102,12 +102,12 @@ extension User {
     
     struct UserDTO: Codable,Content {
         let id: User.IDValue?
-        let name: String
-        let userName: String
+        let name: Name
+        let userName: UserName
         let email: Email
-        let phone: String
-        let zipcode: String
-        let countryCode: String
+        let phone: PhoneNumber
+        let zipcode: ZipCode
+        let countryCode: CountryCode
         let createdDate: Date
         let updatedDate: Date
         

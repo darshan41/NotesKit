@@ -40,7 +40,7 @@ class UsersController<T: User>: GenericRootController<T>,VersionedRouteCollectio
     }
     
     override func apiPathComponent() -> [PathComponent] {
-        super.apiPathComponent() + [.constant(User.schema)]
+        super.apiPathComponent() + [.constant(T.schema)]
     }
     
     override func finalComponents() -> [PathComponent] {

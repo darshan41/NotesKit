@@ -25,7 +25,7 @@ class ProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>
     }
     
     override func apiPathComponent() -> [PathComponent] {
-        super.apiPathComponent() + [.constant(Profile.schema)]
+        super.apiPathComponent() + [.constant(T.schema)]
     }
     
     override func finalComponents() -> [PathComponent] {

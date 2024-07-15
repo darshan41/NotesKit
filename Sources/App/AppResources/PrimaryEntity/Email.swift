@@ -18,7 +18,7 @@ public struct Email: Hashable, Equatable, CustomStringConvertible, Sendable, Cod
     }
     
     public init(emailString: String) throws {
-        guard let atIndex = emailString.firstIndex(of: "@") else {
+        guard let atIndex = emailString.firstIndex(of: "@"),Email.isValidEmail(emailString) else {
             throw CustomEmailError.invalidEmailFormat as ErrorShowable
         }
         let prefixSubstring = emailString.prefix(upTo: atIndex)
