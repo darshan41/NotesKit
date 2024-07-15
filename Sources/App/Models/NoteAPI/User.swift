@@ -42,6 +42,9 @@ final class User: SortableItem,@unchecked Sendable,Encodable {
     @Field(key: phone)
     var phone: String
     
+    @Children(for: \.$user)
+    var notes: [Note]
+    
     @Field(key: zipcode)
     var zipcode: String
     
@@ -91,11 +94,35 @@ final class User: SortableItem,@unchecked Sendable,Encodable {
     
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
+        try container.encode(UserDTO(user: self), forKey: .user)
     }
 }
 
 extension User {
+    
+    struct UserDTO: Codable,Content {
+        let id: User.IDValue?
+        let name: String
+        let userName: String
+        let email: Email
+        let phone: String
+        let zipcode: String
+        let countryCode: String
+        let createdDate: Date
+        let updatedDate: Date
+        
+        init(user: User) {
+            self.id = user.id
+            self.name = user.name
+            self.userName = user.userName
+            self.email = user.email
+            self.phone = user.phone
+            self.zipcode = user.zipcode
+            self.countryCode = user.countryCode
+            self.createdDate = user.createdDate
+            self.updatedDate = user.updatedDate
+        }
+    }
     
     fileprivate enum CodingKeys: String,CodingKey {
         case name
@@ -103,6 +130,7 @@ extension User {
         case userName
         case email
         case phone
+        case user
         case zipcode
         case countryCode
         case createdDate
@@ -120,6 +148,7 @@ extension User {
         self.phone = newValue.phone
         self.email = newValue.email
         self.userName = newValue.userName
+        self.updatedDate = Date()
         return self
     }
     

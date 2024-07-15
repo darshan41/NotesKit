@@ -13,17 +13,17 @@ struct CreateNote: AppMigration {
     typealias MigraterModelClass = Note
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Note.schema)
+        database.schema(MigraterModelClass.schema)
             .id()
-            .field(Note.note, .string, .required)
-            .field(Note.cardColor, .string, .required)
-            .field(Note.date, .date, .required)
-            .field(Note.userId,.uuid,.required)
+            .field(MigraterModelClass.note, .string, .required)
+            .field(MigraterModelClass.cardColor, .string, .required)
+            .field(MigraterModelClass.date, .date, .required)
+            .field(MigraterModelClass.userId,.uuid,.required,.references(User.schema, .id))
             .create()
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Note.schema).delete()
+        database.schema(MigraterModelClass.schema).delete()
     }
 }
 

@@ -30,10 +30,6 @@ class NotesController: GenericRootController<Note>,VersionedRouteCollection {
         routes.add(getSpecificCodableObjectHavingID())
     }
     
-    override func generateUnableToFind(forRequested id: UUID) -> String {
-        "Unable to find the note for requested id: \(id)"
-    }
-    
     override func apiPathComponent() -> [PathComponent] {
         super.apiPathComponent() + [.constant(T.schema)]
     }
@@ -47,7 +43,7 @@ class NotesController: GenericRootController<Note>,VersionedRouteCollection {
     }
     
     func getAllCodableObjects() -> Route {
-        app.get(finalComponents()) { req -> NotesEventLoopFuture in
+        app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
             return T.query(on: req.db).all().map { results in
                 AppResponse(code: .ok, error: nil, data: results)
             }

@@ -26,7 +26,7 @@ open class GenericRootController<T: Notable>: @unchecked Sendable {
     }
         
     open func generateUnableToFind(forRequested id: T.IDValue) -> String {
-        "Unable to find the item for requested id: \(id)"
+        "Unable to find the \(T.objectTitleForErrorTitle) for requested id: \(id)"
     }
     
     open func generateUnableToFindAny(forRequested type: T.Type,for method: HTTPMethod) -> String {

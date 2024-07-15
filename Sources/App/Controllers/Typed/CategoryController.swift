@@ -1,18 +1,18 @@
 //
-//  GenericUsersController.swift
+//  Category.swift
 //
 //
-//  Created by Darshan S on 15/05/24.
+//  Created by Darshan S on 15/07/24.
 //
 
 import Vapor
 import Fluent
 
-class UsersController<T: User>: GenericRootController<T>,VersionedRouteCollection {
+class CategoryController<T: Category>: GenericRootController<T>,VersionedRouteCollection {
     
     private let notes: String = "notes"
     
-    private typealias T = User
+    private typealias T = Category
     
     private let search: String = "search"
     private let queryString: String = "query"
@@ -36,7 +36,7 @@ class UsersController<T: User>: GenericRootController<T>,VersionedRouteCollectio
         routes.add(postCreateCodableObject())
         routes.add(deleteTheCodableObject())
         routes.add(putTheCodableObject())
-        routes.add(getNotesForTheUser())
+//        routes.add(getNotesForTheUser())
     }
     
     override func apiPathComponent() -> [PathComponent] {
@@ -52,7 +52,7 @@ class UsersController<T: User>: GenericRootController<T>,VersionedRouteCollectio
     }
 }
 
-extension UsersController {
+extension CategoryController {
     
     @discardableResult
     func postCreateCodableObject() -> Route {
@@ -60,11 +60,11 @@ extension UsersController {
     }
     
     @Sendable
-    func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<User.UserDTO>> {
+    func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category.CategoryDTO>> {
         do {
-            let user = try req.content.decode(T.self, using: self.decoder)
-            return user.save(on: req.db).map {
-                AppResponse<User.UserDTO>(code: .created, error: nil, data: User.UserDTO(user: user))
+            let category = try req.content.decode(T.self, using: self.decoder)
+            return category.save(on: req.db).map {
+                AppResponse<Category.CategoryDTO>(code: .created, error: nil, data: Category.CategoryDTO(category: category))
             }
         } catch {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
@@ -78,9 +78,9 @@ extension UsersController {
     
     @Sendable
     func getAllCodableObjectsHandler(_ req: Request)
-    -> EventLoopFuture<AppResponse<[User.UserDTO]>> {
+    -> EventLoopFuture<AppResponse<[Category.CategoryDTO]>> {
         T.query(on: req.db).all().map { results in
-            AppResponse(code: .ok, error: nil, data: results.map({ User.UserDTO(user: $0) }))
+            AppResponse(code: .ok, error: nil, data: results.map({ Category.CategoryDTO(category: $0) }))
         }
     }
     
@@ -102,42 +102,42 @@ extension UsersController {
             }
         }
     }
-    
-    @Sendable
-    func getNotesForTheUserHandler(_ req: Request) -> NotesEventLoopFuture<Note> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
-            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
-        }
-        let isAscending = req.query[self.sortOrder] == self.ascending
-        let isLikeWise = req.query[Bool.self, at: self.isLikeWise]
-        let searchTerm = req.query[String.self, at: self.queryString]
-        return T.find(idValue, on: req.db)
-            .unwrap(orError: AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
-            .flatMap { user in
-                let userQueryBuilder: QueryBuilder<NotesController.T> = user.$notes.query(on: req.db)
-                if let searchTerm,let isLikeWise {
-                    if isLikeWise {
-                        userQueryBuilder.group(.or) { or in
-                            or.filter(\.filterSearchItem ~~ searchTerm)
-                        }
-                    } else {
-                        userQueryBuilder.group(.or) { or in
-                            or.filter(\.filterSearchItem == searchTerm)
-                        }
-                    }
-                }
-                return userQueryBuilder.sort(\.someComparable, isAscending ? .ascending : .descending)
-                    .all()
-            }.map { notes in
-                return AppResponse<[Note]>(code: .ok, error: nil, data: notes)
-            }
-    }
-    
-    @Sendable
-    func getNotesForTheUser() -> Route {
-        let path = (finalComponents().byAdding(.constant(self.notes)))
-        return app.get(path, use: getNotesForTheUserHandler)
-    }
+//    
+//    @Sendable
+//    func getNotesForTheUserHandler(_ req: Request) -> NotesEventLoopFuture<Note> {
+//        guard let idValue = req.parameters.getCastedTID(T.self) else {
+//            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
+//        }
+//        let isAscending = req.query[self.sortOrder] == self.ascending
+//        let isLikeWise = req.query[Bool.self, at: self.isLikeWise]
+//        let searchTerm = req.query[String.self, at: self.queryString]
+//        return T.find(idValue, on: req.db)
+//            .unwrap(orError: AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+//            .flatMap { category in
+//                let userQueryBuilder: QueryBuilder<NotesController.T> = category.$notes.query(on: req.db)
+//                if let searchTerm,let isLikeWise {
+//                    if isLikeWise {
+//                        userQueryBuilder.group(.or) { or in
+//                            or.filter(\.filterSearchItem ~~ searchTerm)
+//                        }
+//                    } else {
+//                        userQueryBuilder.group(.or) { or in
+//                            or.filter(\.filterSearchItem == searchTerm)
+//                        }
+//                    }
+//                }
+//                return userQueryBuilder.sort(\.someComparable, isAscending ? .ascending : .descending)
+//                    .all()
+//            }.map { notes in
+//                return AppResponse<[Note]>(code: .ok, error: nil, data: notes)
+//            }
+//    }
+//    
+//    @Sendable
+//    func getNotesForTheUser() -> Route {
+//        let path = (finalComponents().byAdding(.constant(self.notes)))
+//        return app.get(path, use: getNotesForTheUserHandler)
+//    }
     
     @discardableResult
     func deleteTheCodableObject() -> Route {
@@ -194,3 +194,4 @@ extension UsersController {
         }
     }
 }
+

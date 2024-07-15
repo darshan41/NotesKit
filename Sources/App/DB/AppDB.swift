@@ -54,10 +54,12 @@ public class AppDB {
         )
         
         app.has(
-            migrations: CreateNote(),
-            CreateUser(),
-            CreateProfile(),
-            CreateAnime()
+            migrations:
+                CreateUser(),
+                CreateCategory(),
+                CreateNote(),
+                CreateProfile(),
+                CreateAnime()
         )
         app.logger.logLevel = .debug
         try routes(

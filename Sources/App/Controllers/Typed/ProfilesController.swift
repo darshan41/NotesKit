@@ -24,10 +24,6 @@ class ProfilesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>
         try super.boot(routes: routes)
     }
     
-    override func generateUnableToFind(forRequested id: T.IDValue) -> String {
-        "Unable to find the profile for requested id: \(id)"
-    }
-    
     override func apiPathComponent() -> [PathComponent] {
         super.apiPathComponent() + [.constant(Profile.schema)]
     }

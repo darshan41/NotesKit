@@ -52,6 +52,14 @@ public protocol Notable: Postable,Getable,UpdateIble,Deletable { }
 public protocol CustomModel: Model {
     
     static var schema: String { get }
+    static var objectTitleForErrorTitle: String { get }
+}
+
+extension CustomModel {
+    
+    static var objectTitleForErrorTitle: String {
+        schema.hasSuffix("s") ? String(schema[..<schema.index(before: schema.endIndex)]) : schema
+    }
 }
 
 /// Cool, Very Cool

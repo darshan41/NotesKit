@@ -1,26 +1,21 @@
 //
-//  CreateUser.swift
+//  CreateCategory.swift
 //
 //
-//  Created by Darshan S on 15/05/24.
+//  Created by Darshan S on 15/07/24.
 //
 
 import Foundation
 import Fluent
 
-struct CreateUser: AppMigration {
+struct CreateCategory: AppMigration {
     
-    typealias MigraterModelClass = User
+    typealias MigraterModelClass = Category
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema(MigraterModelClass.schema)
             .id()
             .field(MigraterModelClass.name, .string, .required)
-            .field(MigraterModelClass.email, .string, .required)
-            .field(MigraterModelClass.userName, .string, .required)
-            .field(MigraterModelClass.zipcode, .string, .required)
-            .field(MigraterModelClass.countryCode, .string, .required)
-            .field(MigraterModelClass.phone, .string, .required)
             .field(MigraterModelClass.createdDate, .date, .required)
             .field(MigraterModelClass.updatedDate, .date, .required)
             .create()

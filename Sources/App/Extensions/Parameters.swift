@@ -18,7 +18,7 @@ extension Parameters {
 
 extension Array {
     
-    func byAdding(_ component: Element...) -> Self {
+    func byAdding(_ component: Element...) -> [Element] {
         self + component
     }
     

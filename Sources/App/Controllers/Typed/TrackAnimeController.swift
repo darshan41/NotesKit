@@ -23,10 +23,6 @@ class TrackAnimeController: GenericItemController<Anime> {
         routes.add(getAllNotesInSorted())
     }
     
-    override func generateUnableToFind(forRequested id: UUID) -> String {
-        "Unable to find the note for requested id: \(id)"
-    }
-    
     override func apiPathComponent() -> [PathComponent] {
         super.apiPathComponent() + [.constant(T.schema)]
     }

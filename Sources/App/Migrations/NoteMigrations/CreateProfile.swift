@@ -13,17 +13,17 @@ struct CreateProfile: AppMigration {
     typealias MigraterModelClass = Profile
     
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Profile.schema)
+        database.schema(MigraterModelClass.schema)
             .id()
-            .field(Profile.profileImage, .string, .required)
-            .field(Profile.profileName, .string, .required)
-            .field(Profile.createdDate, .date, .required)
-            .field(Profile.updatedDate, .date, .required)
+            .field(MigraterModelClass.profileImage, .string, .required)
+            .field(MigraterModelClass.profileName, .string, .required)
+            .field(MigraterModelClass.createdDate, .date, .required)
+            .field(MigraterModelClass.updatedDate, .date, .required)
             .create()
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema(Profile.schema).delete()
+        database.schema(MigraterModelClass.schema).delete()
     }
 }
 
