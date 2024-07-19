@@ -56,9 +56,7 @@ class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringVal
     @Sendable
     func getAllNotesInSorted(_ req: Request) -> NotesEventLoopFuture<T> {
         let isAscending = req.query[self.sortOrder] == self.ascending
-        return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
-            AppResponse(code: .ok, error: nil, data: results)
-        }
+        return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().mappedToSuccessResponse()
     }
     
     @discardableResult
@@ -69,12 +67,10 @@ class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringVal
     @Sendable
     func getAllNotesInFiltered(_ req: Request) -> NotesEventLoopFuture<T> {
         guard let searchTerm = req.query[U.Value.self, at: self.queryString] else {
-            return req.eventLoop.future(AppResponse<[T]>(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), data: nil))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), value: [T].self)
         }
         return T.query(on: req.db).group(.or) { or in
             or.filter(\.filterSearchItem == searchTerm)
-        }.all().map { filteredNotes in
-            AppResponse(code: .ok, error: nil, data: filteredNotes)
-        }
+        }.all().mappedToSuccessResponse()
     }
 }

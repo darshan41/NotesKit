@@ -10,6 +10,7 @@ import Fluent
 
 protocol CustomEncodable { }
 
+
 final class Note: SortableItem,@unchecked Sendable {
     
     typealias T = FieldProperty<Note, SortingValue>

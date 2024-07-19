@@ -80,7 +80,7 @@ extension UsersController {
     func getAllCodableObjectsHandler(_ req: Request)
     -> EventLoopFuture<AppResponse<[User.UserDTO]>> {
         T.query(on: req.db).all().map { results in
-            AppResponse(code: .ok, error: nil, data: results.map({ User.UserDTO(user: $0) }))
+            results.map({ User.UserDTO(user: $0) }).successResponse()
         }
     }
     
@@ -96,7 +96,7 @@ extension UsersController {
         }
         return T.find(idValue, on: req.db).flatMap { value in
             if let wrapped = value {
-                return req.eventLoop.future(AppResponse<T>(code: .ok, error: nil, data: wrapped))
+                return req.eventLoop.future(wrapped.successResponse())
             } else {
                 return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
             }
@@ -128,9 +128,7 @@ extension UsersController {
                 }
                 return userQueryBuilder.sort(\.someComparable, isAscending ? .ascending : .descending)
                     .all()
-            }.map { notes in
-                return AppResponse<[Note]>(code: .ok, error: nil, data: notes)
-            }
+            }.mappedToSuccessResponse()
     }
     
     @Sendable
@@ -154,7 +152,7 @@ extension UsersController {
                 if let wrapped {
                     let value = wrapped
                         .delete(on: req.db)
-                        .transform(to: AppResponse<T>(code: .ok, error: nil, data: wrapped))
+                        .transform(to: wrapped.successResponse())
                     return value
                 } else {
                     return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))

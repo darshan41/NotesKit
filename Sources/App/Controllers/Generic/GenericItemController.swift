@@ -56,14 +56,12 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     
     @Sendable
     open func getAllCodableObjectsHandler(_ req: Request) -> NotesEventLoopFuture<T> {
-        T.query(on: req.db).all().map { results in
-            AppResponse(code: .ok, error: nil, data: results)
-        }
+        T.query(on: req.db).all().mappedToSuccessResponse()
     }
     
     @Sendable
     open func getAllCodableObjectsHandler(_ req: Request) async throws -> AppResponse<[T]> {
-        AppResponse(code: .ok, error: nil, data: try await T.query(on: req.db).all())
+        try await T.query(on: req.db).all().successResponse()
     }
     
     
@@ -75,13 +73,13 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     @Sendable
     open func getSpecificCodableObjectHavingIDHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         guard let idValue = req.parameters.getCastedTID(T.self) else {
-            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
         }
         return T.find(idValue, on: req.db).flatMap { value in
             if let wrapped = value {
-                return req.eventLoop.future(AppResponse<T>(code: .ok, error: nil, data: wrapped))
+                return req.makeFutureSuccess(wrapped)
             } else {
-                return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
             }
         }
     }
@@ -104,7 +102,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
                         .transform(to: AppResponse<T>(code: .ok, error: nil, data: wrapped))
                     return value
                 } else {
-                    return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                    return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }
             }
     }

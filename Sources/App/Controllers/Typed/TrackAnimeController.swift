@@ -48,9 +48,7 @@ extension TrackAnimeController {
     @Sendable
     private func getAllNotesInSortedHandler(_ req: Request) -> NotesEventLoopFuture<T> {
         let isAscending = req.query[self.sortOrder] == self.ascending
-        return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
-            AppResponse(code: .ok, error: nil, data: results)
-        }
+        return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().mappedToSuccessResponse()
     }
 }
 

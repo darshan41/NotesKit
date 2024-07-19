@@ -44,22 +44,20 @@ class NotesController: GenericRootController<Note>,VersionedRouteCollection {
     
     func getAllCodableObjects() -> Route {
         app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
-            return T.query(on: req.db).all().map { results in
-                AppResponse(code: .ok, error: nil, data: results)
-            }
+            T.query(on: req.db).all().mappedToSuccessResponse()
         }
     }
     
     func getSpecificCodableObjectHavingID() -> Route {
         app.get(finalComponents()) { req -> NoteEventLoopFuture<T> in
             guard let idValue = req.parameters.getCastedTID(T.self) else {
-                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
+                return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
             }
             return T.find(idValue, on: req.db).flatMap { value in
                 if let wrapped = value {
-                    return req.eventLoop.future(AppResponse<T>(code: .ok, error: nil, data: wrapped))
+                    return req.makeFutureSuccess(wrapped)
                 } else {
-                    return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                    return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }
             }
         }
@@ -74,9 +72,9 @@ extension NotesController {
     func getAllNotesInSorted() -> Route {
         app.get(apiPathComponent().byAdding(.constant(sorted))) { req -> NotesEventLoopFuture in
             let isAscending = req.query[self.sortOrder] == self.ascending
-            return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().map { results in
-                AppResponse(code: .ok, error: nil, data: results)
-            }
+            return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending)
+                .all()
+                .successResponse()
         }
     }
     
@@ -84,7 +82,7 @@ extension NotesController {
     func getAllNotesInFiltered() -> Route {
         app.get(apiPathComponent().byAdding(.constant(filter))) { req -> NotesEventLoopFuture<T> in
             guard let searchTerm = req.query[String.self, at: self.queryString] else {
-                return req.eventLoop.future(AppResponse<[T]>(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), data: nil))
+                return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), value: [T].self)
             }
             let isLikeWise = req.query[Bool.self, at: self.isLikeWise] ?? false
             var builder: QueryBuilder<NotesController.T>
@@ -97,9 +95,7 @@ extension NotesController {
                     or.filter(\.filterSearchItem ~~ searchTerm)
                 }
             }
-            return builder.all().map { filteredNotes in
-                AppResponse(code: .ok, error: nil, data: filteredNotes)
-            }
+            return builder.all().mappedToSuccessResponse()
         }
     }
     
