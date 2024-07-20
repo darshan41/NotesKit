@@ -50,6 +50,15 @@ public extension EventLoopFuture where Value: Content {
     func successResponse(_ code: HTTPResponseStatus = .ok) -> EventLoopFuture<AppResponse<Value>> {
         map { AppResponse(code: code, error: nil, data: $0) }
     }
+    
+    func successResponseWithNewValue<NewValue: Content>(
+        _ code: HTTPResponseStatus = .ok,
+        _ callback: @escaping @Sendable (Value) -> (AppResponse<NewValue>)
+    ) -> EventLoopFuture<AppResponse<NewValue>> {
+        map { value in
+            self.eventLoop.makeSucceededFuture(callback(value))
+        }.flatMap { $0 }
+    }
 }
 
 public extension EventLoopFuture where Value: Collection,Value: Content,Value.Element: Content {
@@ -121,6 +130,13 @@ public extension Content {
 }
 
 public extension EventLoopFuture<Void> {
+    
+    func mapNewResponseFromVoid<NewValue: Content>(
+        value: NewValue,
+        _ code: HTTPResponseStatus = .ok
+    ) -> EventLoopFuture<AppResponse<NewValue>> {
+        self.eventLoop.makeSucceededFuture(AppResponse(code: code, error: nil, data: value))
+    }
     
     func mappedToSuccess<T: Content & Sendable>(value: T,code: HTTPResponseStatus = .ok) -> AppResponse<T> {
         value.successResponse(code)

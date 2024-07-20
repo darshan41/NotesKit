@@ -63,9 +63,8 @@ extension CategoryController {
     func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category.CategoryDTO>> {
         do {
             let category = try req.content.decode(T.self, using: self.decoder)
-            return category.save(on: req.db).map {
-                AppResponse<Category.CategoryDTO>(code: .created, error: nil, data: Category.CategoryDTO(category: category))
-            }
+            return category.save(on: req.db).mapNewResponseFromVoid(value: Category.CategoryDTO(category: category))
+            
         } catch {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
         }
@@ -92,13 +91,13 @@ extension CategoryController {
     @Sendable
     func getSpecificCodableObjectHavingIDHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         guard let idValue = req.parameters.getCastedTID(T.self) else {
-            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
         }
         return T.find(idValue, on: req.db).flatMap { value in
             if let wrapped = value {
                 return req.eventLoop.future(wrapped.successResponse())
             } else {
-                return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
             }
         }
     }
@@ -157,7 +156,7 @@ extension CategoryController {
                         .transform(to: wrapped.successResponse())
                     return value
                 } else {
-                    return req.eventLoop.future(AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                    return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }
             }
     }
@@ -172,7 +171,7 @@ extension CategoryController {
         do {
             let note = try req.content.decode(T.self, using: self.decoder)
             guard let idValue = req.parameters.getCastedTID(T.self) ?? note.id else {
-                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))
+                return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)))
             }
             let found = T.find(idValue, on: req.db)
             let mapped = found.flatMap { wrapped -> NoteEventLoopFuture<T>  in
@@ -185,12 +184,12 @@ extension CategoryController {
                         }
                     return value
                 } else {
-                    return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                    return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }
             }
             return mapped
         } catch {
-            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(error))
         }
     }
 }
