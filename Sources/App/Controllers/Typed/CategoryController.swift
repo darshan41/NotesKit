@@ -98,42 +98,6 @@ extension CategoryController {
             }
         }
     }
-//    
-//    @Sendable
-//    func getNotesForTheUserHandler(_ req: Request) -> NotesEventLoopFuture<Note> {
-//        guard let idValue = req.parameters.getCastedTID(T.self) else {
-//            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
-//        }
-//        let isAscending = req.query[self.sortOrder] == self.ascending
-//        let isLikeWise = req.query[Bool.self, at: self.isLikeWise]
-//        let searchTerm = req.query[String.self, at: self.queryString]
-//        return T.find(idValue, on: req.db)
-//            .unwrap(orError: AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
-//            .flatMap { category in
-//                let userQueryBuilder: QueryBuilder<NotesController.T> = category.$notes.query(on: req.db)
-//                if let searchTerm,let isLikeWise {
-//                    if isLikeWise {
-//                        userQueryBuilder.group(.or) { or in
-//                            or.filter(\.filterSearchItem ~~ searchTerm)
-//                        }
-//                    } else {
-//                        userQueryBuilder.group(.or) { or in
-//                            or.filter(\.filterSearchItem == searchTerm)
-//                        }
-//                    }
-//                }
-//                return userQueryBuilder.sort(\.someComparable, isAscending ? .ascending : .descending)
-//                    .all()
-//            }.map { notes in
-//                return AppResponse<[Note]>(code: .ok, error: nil, data: notes)
-//            }
-//    }
-//    
-//    @Sendable
-//    func getNotesForTheUser() -> Route {
-//        let path = (finalComponents().byAdding(.constant(self.notes)))
-//        return app.get(path, use: getNotesForTheUserHandler)
-//    }
     
     @discardableResult
     func deleteTheCodableObject() -> Route {
@@ -175,10 +139,7 @@ extension CategoryController {
                     let value = wrapped
                         .requestUpdate(with: note)
                         .save(on: req.db)
-                        .map { _ in
-                            AppResponse<T>(code: .accepted, error: nil, data: wrapped)
-                        }
-                    return value
+                    return value.mapNewResponseFromVoid(newValue: wrapped, .created)
                 } else {
                     return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }

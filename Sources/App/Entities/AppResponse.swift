@@ -15,7 +15,17 @@ public protocol NoteResponseEncodable {
     var data: T? { get }
 }
 
-public struct AppResponse<T: Content>: ResponseEncodable,NoteResponseEncodable,Content,AppResponseError {
+public protocol AppResponsible: ResponseEncodable,NoteResponseEncodable,Content,AppResponseError {
+ 
+    init(
+        code: HTTPResponseStatus,
+        error: ErrorMessage?,
+        data: T?,
+        isServerGeneratedError: Bool
+    )
+}
+
+public struct AppResponse<T: Content>: AppResponsible {
     
     public enum CodingKeys: String,CodingKey {
         case code

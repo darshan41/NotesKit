@@ -42,7 +42,7 @@ public protocol Deletable: Modelable { }
 
 public protocol UpdateIble: Modelable {
     
-    func requestUpdate(with newValue: Self) -> Self
+    func requestUpdate(with newValue: Self) throws -> Self
 }
 
 public protocol Getable: Modelable { }

@@ -55,7 +55,7 @@ class NotesController: GenericRootController<Note>,VersionedRouteCollection {
             }
             return T.find(idValue, on: req.db).flatMap { value in
                 if let wrapped = value {
-                    return req.makeFutureSuccess(wrapped)
+                    return req.makeFutureSuccess(with: wrapped)
                 } else {
                     return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }
@@ -105,14 +105,10 @@ extension NotesController {
     }
     
     @Sendable
-    func postCreateCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        do {
+    func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<T>> {
+        req.perform { req in
             let note = try req.content.decode(T.self, using: self.decoder)
-            return note.save(on: req.db).map {
-                AppResponse<T>(code: .created, error: nil, data: note)
-            }
-        } catch {
-            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
+            return note.save(on: req.db).mapNewResponseFromVoid(newValue: note, .created)
         }
     }
 }

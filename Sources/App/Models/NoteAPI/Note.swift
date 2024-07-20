@@ -1,6 +1,6 @@
 //
 //  Note.swift
-//  
+//
 //
 //  Created by Darshan S on 11/05/24.
 //
@@ -40,6 +40,12 @@ final class Note: SortableItem,@unchecked Sendable {
     
     @Field(key: date)
     var date: Date
+    
+    @Siblings(
+        through: NoteCategoryPivot.self,
+        from: \.$note,
+        to: \.$category)
+    var categories: [Category]
     
     init() { }
     
@@ -89,7 +95,7 @@ final class Note: SortableItem,@unchecked Sendable {
 }
 
 extension Note {
-        
+    
     func requestUpdate(with newValue: Note) -> Note {
         note = newValue.note
         cardColor = newValue.cardColor

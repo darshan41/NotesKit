@@ -97,7 +97,17 @@ public extension EventLoopFuture where Value: OptionalType,Value: ContentSendabl
 
 public extension Request {
     
-    func makeFutureSuccess<T: Content>(_ value: T,code: HTTPResponseStatus = .ok) -> EventLoopFuture<AppResponse<T>> {
+    func perform<T: Content>(
+        execute: @escaping (Request) throws -> EventLoopFuture<AppResponse<T>>
+    ) -> EventLoopFuture<AppResponse<T>> {
+        do {
+            return try execute(self)
+        } catch {
+            return self.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(error))
+        }
+    }
+    
+    func makeFutureSuccess<T: Content>(with value: T,code: HTTPResponseStatus = .ok) -> EventLoopFuture<AppResponse<T>> {
         eventLoop.future(value.successResponse(code))
     }
     
@@ -162,6 +172,16 @@ public extension EventLoopFuture<Void> {
         _ code: HTTPResponseStatus = .ok
     ) -> EventLoopFuture<AppResponse<NewValue>> {
         self.eventLoop.makeSucceededFuture(AppResponse(code: code, error: nil, data: newValue))
+    }
+    
+    func mapNewResponseFromVoidThrowing<NewValue: Content>(
+        newValue: NewValue,
+        _ code: HTTPResponseStatus = .ok,
+        callback: () throws -> Void
+    ) rethrows -> EventLoopFuture<AppResponse<NewValue>> {
+        try callback()
+        let response = AppResponse(code: code, error: nil, data: newValue)
+        return self.eventLoop.makeSucceededFuture(response)
     }
     
     func mappedToSuccess<T: Content & Sendable>(value: T,code: HTTPResponseStatus = .ok) -> AppResponse<T> {

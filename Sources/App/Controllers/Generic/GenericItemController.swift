@@ -77,7 +77,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
         }
         return T.find(idValue, on: req.db).flatMap { value in
             if let wrapped = value {
-                return req.makeFutureSuccess(wrapped)
+                return req.makeFutureSuccess(with: wrapped)
             } else {
                 return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
             }
@@ -121,14 +121,8 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
             }
             let found = T.find(idValue, on: req.db)
             let mapped = found.flatMap { wrapped -> NoteEventLoopFuture<T>  in
-                if let wrapped {
-                    let value = wrapped
-                        .requestUpdate(with: note)
-                        .save(on: req.db)
-                        .map { _ in
-                            AppResponse<T>(code: .accepted, error: nil, data: wrapped)
-                        }
-                    return value
+                if let wrapped,let value = try? wrapped.requestUpdate(with: note) {
+                    return value.save(on: req.db).mapNewResponseFromVoid(newValue: wrapped)
                 } else {
                     return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
                 }

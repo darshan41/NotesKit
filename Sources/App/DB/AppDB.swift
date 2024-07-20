@@ -58,6 +58,7 @@ public class AppDB {
                 CreateUser(),
                 CreateCategory(),
                 CreateNote(),
+                CreateNoteCategoryPivot(),
                 CreateProfile(),
                 CreateAnime()
         )
