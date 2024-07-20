@@ -63,10 +63,9 @@ extension CategoryController {
     func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category.CategoryDTO>> {
         do {
             let category = try req.content.decode(T.self, using: self.decoder)
-            return category.save(on: req.db).mapNewResponseFromVoid(value: Category.CategoryDTO(category: category))
-            
+            return category.save(on: req.db).mapNewResponseFromVoid(newValue: Category.CategoryDTO(category: category))
         } catch {
-            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(error))
         }
     }
     
@@ -78,9 +77,7 @@ extension CategoryController {
     @Sendable
     func getAllCodableObjectsHandler(_ req: Request)
     -> EventLoopFuture<AppResponse<[Category.CategoryDTO]>> {
-        T.query(on: req.db).all().map { results in
-            results.map({ Category.CategoryDTO(category: $0) }).successResponse()
-        }
+        T.query(on: req.db).all().transformElementsWithEventLoopAppResponse(using: { Category.CategoryDTO(category: $0) })
     }
     
     @discardableResult
@@ -151,10 +148,9 @@ extension CategoryController {
         return T.find(idValue, on: req.db)
             .flatMap { wrapped -> NoteEventLoopFuture<T>  in
                 if let wrapped {
-                    let value = wrapped
+                    return wrapped
                         .delete(on: req.db)
-                        .transform(to: wrapped.successResponse())
-                    return value
+                        .mapNewResponseFromVoid(newValue: wrapped)
                 } else {
                     return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
                 }

@@ -10,9 +10,8 @@ import Vapor
 
 public protocol ContentSendable: Content & Sendable { }
 
-
 public protocol OptionalType {
-
+    
     associatedtype Wrapped
     
     var optional: Wrapped? { get }
@@ -47,21 +46,32 @@ public extension Optional where Wrapped: Content {
 
 public extension EventLoopFuture where Value: Content {
     
+    typealias NewContentTransform<NewValue: Content> = @Sendable (Value) -> NewValue
+    typealias NewContentAppResponseTransform<NewValue: Content> = @Sendable (Value) -> AppResponse<NewValue>
+    
     func successResponse(_ code: HTTPResponseStatus = .ok) -> EventLoopFuture<AppResponse<Value>> {
         map { AppResponse(code: code, error: nil, data: $0) }
-    }
-    
-    func successResponseWithNewValue<NewValue: Content>(
-        _ code: HTTPResponseStatus = .ok,
-        _ callback: @escaping @Sendable (Value) -> (AppResponse<NewValue>)
-    ) -> EventLoopFuture<AppResponse<NewValue>> {
-        map { value in
-            self.eventLoop.makeSucceededFuture(callback(value))
-        }.flatMap { $0 }
     }
 }
 
 public extension EventLoopFuture where Value: Collection,Value: Content,Value.Element: Content {
+    
+    typealias ContentTransform<NewValue: Content> = @Sendable (Value.Element) -> NewValue
+    
+    func transformElementsWithEventLoopAppResponse<DTO: Content>(
+        _ code: HTTPResponseStatus = .ok,
+        using transform: @escaping ContentTransform<DTO>
+    ) -> EventLoopFuture<AppResponse<[DTO]>> {
+        self.transformElements(using: transform).successResponse(code)
+    }
+    
+    func transformElements<DTO: Content>(
+        using transform: @escaping ContentTransform<DTO>
+    ) -> EventLoopFuture<[DTO]> {
+        map { collection in
+            collection.map(transform)
+        }
+    }
     
     func mappedToSuccessResponse(_ code: HTTPResponseStatus = .ok) -> EventLoopFuture<AppResponse<Value>> {
         map { $0.successResponse(code) }
@@ -102,8 +112,17 @@ public extension Request {
 
 public extension Array where Element: Content {
     
+    typealias NewContentTransform<NewValue: Content> = @Sendable (Self) -> NewValue
+    
     func successResponse(_ code: HTTPResponseStatus = .ok) -> AppResponse<Self> {
-        AppResponse(code: .ok, error: nil, data: self)
+        AppResponse(code: code, error: nil, data: self)
+    }
+    
+    func successResponseMapNewValue<NewValue: Content>(
+        _ code: HTTPResponseStatus = .ok,
+        _ callback: @escaping NewContentTransform<NewValue>
+    ) -> AppResponse<NewValue> {
+        callback(self).successResponse(code)
     }
 }
 
@@ -121,21 +140,28 @@ public extension EventLoop {
 public extension Content {
     
     func successResponse(_ code: HTTPResponseStatus = .ok) -> AppResponse<Self> {
-        AppResponse(code: .ok, error: nil, data: self)
+        AppResponse(code: code, error: nil, data: self)
     }
     
     func mapFailure(code: HTTPResponseStatus,error: ErrorMessage) -> AppResponse<Self> {
         AppResponse(code: code, error: error, data: nil)
+    }
+    
+    func successResponseMapNewValue<NewValue: Content>(
+        _ code: HTTPResponseStatus = .ok,
+        _ callback: @escaping @Sendable (Self) -> (NewValue)
+    ) -> AppResponse<NewValue> {
+        callback(self).successResponse(code)
     }
 }
 
 public extension EventLoopFuture<Void> {
     
     func mapNewResponseFromVoid<NewValue: Content>(
-        value: NewValue,
+        newValue: NewValue,
         _ code: HTTPResponseStatus = .ok
     ) -> EventLoopFuture<AppResponse<NewValue>> {
-        self.eventLoop.makeSucceededFuture(AppResponse(code: code, error: nil, data: value))
+        self.eventLoop.makeSucceededFuture(AppResponse(code: code, error: nil, data: newValue))
     }
     
     func mappedToSuccess<T: Content & Sendable>(value: T,code: HTTPResponseStatus = .ok) -> AppResponse<T> {
@@ -150,14 +176,3 @@ public extension EventLoopFuture where Value: ContentSendable {
     }
 }
 
-
-                                 
-extension EventLoop {
-    
-    
-//code: HTTPResponseStatus,
-//error: ErrorMessage,
-//eventLoop: EventLoopFuture<T?>
-    
-
-}
