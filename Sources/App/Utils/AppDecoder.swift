@@ -9,9 +9,9 @@ import Foundation
 
 open class AppDecoder: @unchecked Sendable {
     
-    static let shared: AppDecoder = AppDecoder()
+    public static let shared: AppDecoder = AppDecoder()
     
-    lazy var iso8601JSONDeocoder = {
+    public lazy var iso8601JSONDeocoder = {
         let decoder = AppContentDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder

@@ -18,6 +18,7 @@ final class Profile: SortableItem,@unchecked Sendable {
     
     
     static let schema = "profiles"
+    static let objectIdentifierKey: String = "profileID"
     
     static let profileName: FieldKey = FieldKey("profileName")
     static let profileImage: FieldKey = FieldKey("profileImage")

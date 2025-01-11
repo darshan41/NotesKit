@@ -11,8 +11,8 @@ import Fluent
 
 extension Parameters {
     
-    func getCastedTID<T: Modelable>(_ t: T.Type = T.self) -> T.IDValue? {
-        self.get(.id, as: String.self).uuid as? T.IDValue
+    func getCastedTID<T: Modelable>(name: String = .id, _ t: T.Type = T.self) -> T.IDValue? {
+        self.get(name, as: String.self).uuid as? T.IDValue
     }
 }
 

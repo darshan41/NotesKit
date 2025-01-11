@@ -11,7 +11,7 @@ import Fluent
 public class AppMigrator: @unchecked Sendable {
     
     private let app: Application
-    private (set)var migrators: [any AppMigration] = []
+    private(set)var migrators: [any AppMigration] = []
     
     public init(app: Application) {
         self.app = app

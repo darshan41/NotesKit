@@ -7,7 +7,7 @@
 
 import Vapor
 
-public struct ErrorMessage: DebuggableError,Codable {
+public struct ErrorMessage: DebuggableError, Codable, Sendable {
     
     public static let inDebugMode = _isDebugAssertConfiguration()
 

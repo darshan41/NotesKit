@@ -11,7 +11,7 @@ import Fluent
 
 open class ClientVersion {
     
-    public private (set)var supportedPlatform: Platform.SupportedPlatform
+    public private(set)var supportedPlatform: Platform.SupportedPlatform
     
     public init(with supportedPlatform: Platform.SupportedPlatform) {
         self.supportedPlatform = supportedPlatform

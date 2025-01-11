@@ -41,7 +41,7 @@ public extension CountryCode {
     }
     
     static func isValidCountryCode(_ code: String) -> Bool {
-        let codeRegex = "^[0-9]{1,3}$" // Matches 1 to 3 digits
+        let codeRegex = "^\\+?[0-9]{1,3}$"
         let codePredicate = NSPredicate(format: "SELF MATCHES %@", codeRegex)
         return codePredicate.evaluate(with: code)
     }

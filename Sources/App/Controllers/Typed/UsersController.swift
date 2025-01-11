@@ -8,51 +8,110 @@
 import Vapor
 import Fluent
 
-class UsersController<T: User>: GenericRootController<T>,VersionedRouteCollection {
+public protocol RoutesGenerator {
     
-    private let notes: String = "notes"
+    func getAllRoutes() -> [RouteCollection]
+}
+
+protocol ApplicationManager {
+    var app: Application { get }
+    var apiVersion: APIVersion { get }
     
-    private typealias T = User
+    var usersController: NotesKit.UsersController { get }
+    var notesController: NotesKit.NotesController { get }
+    var profilesController: NotesKit.ProfilesController<Profile,FieldProperty<Profile, Profile.FilteringValue>> { get }
+    var categoryController: NotesKit.CategoryController { get }
+}
+
+class NotesKit: ApplicationManager, RoutesGenerator {
     
-    private let search: String = "search"
-    private let queryString: String = "query"
-    private let sorted: String = "sorted"
-    private let sortOrder: String = "sortOrder"
-    private let ascending: String = "ascending"
-    private let isLikeWise: String = "isLikeWise"
-    private let filter: String = "filter"
+    private(set)var app: Application
+    private(set)var apiVersion: APIVersion
     
-    override init(
-        app: Application,
-        version: APIVersion,
-        decoder: JSONDecoder = AppDecoder.shared.iso8601JSONDeocoder
-    ) {
-        super.init(app: app, version: version, decoder: decoder)
+    lazy var usersController: NotesKit.UsersController = {
+        NotesKit.UsersController(kit: self)
+    }()
+    
+    lazy var notesController: NotesKit.NotesController = {
+        NotesKit.NotesController(kit: self)
+    }()
+    
+    lazy var profilesController: NotesKit.ProfilesController<Profile,FieldProperty<Profile, Profile.FilteringValue>> =  {
+        NotesKit.ProfilesController<Profile,FieldProperty<Profile, Profile.FilteringValue>>(kit: self)
+    }()
+    
+    lazy var categoryController: NotesKit.CategoryController = {
+        NotesKit.CategoryController(kit: self)
+    }()
+    
+    init(app: Application, apiVersion: APIVersion) {
+        self.app = app
+        self.apiVersion = apiVersion
     }
     
-    func boot(routes: any Vapor.RoutesBuilder) throws {
-        routes.add(getSpecificCodableObjectHavingID())
-        routes.add(getAllCodableObjects())
-        routes.add(postCreateCodableObject())
-        routes.add(deleteTheCodableObject())
-        routes.add(putTheCodableObject())
-        routes.add(getNotesForTheUser())
-    }
-    
-    override func apiPathComponent() -> [PathComponent] {
-        super.apiPathComponent() + [.constant(T.schema)]
-    }
-    
-    override func finalComponents() -> [PathComponent] {
-        apiPathComponent() + pathVariableComponents()
-    }
-    
-    override func pathVariableComponents() -> [PathComponent] {
-        [.parameter(.id)]
+    func getAllRoutes() -> [any RouteCollection] {
+        [
+            usersController,
+            notesController,
+            profilesController,
+            categoryController
+        ]
     }
 }
 
-extension UsersController {
+extension NotesKit {
+    
+    public class UsersController: GenericRootController<User>, VersionedRouteCollection, @unchecked Sendable {
+        
+        typealias NotesController = NotesKit.NotesController
+        
+        private let notes: String = "notes"
+        
+        public typealias T = User
+        
+        weak var notesKit: NotesKit?
+        
+        private let search: String = "search"
+        private let queryString: String = "query"
+        private let sorted: String = "sorted"
+        private let sortOrder: String = "sortOrder"
+        private let ascending: String = "ascending"
+        private let isLikeWise: String = "isLikeWise"
+        private let filter: String = "filter"
+        
+        public override init<Manager: ApplicationManager>(
+            kit: Manager,
+            decoder: JSONDecoder = AppDecoder.shared.iso8601JSONDeocoder
+        ) {
+            super.init(kit: kit, decoder: decoder)
+        }
+        
+        func boot(routes: any Vapor.RoutesBuilder) throws {
+            routes.add(getSpecificCodableObjectHavingID())
+            routes.add(getAllCodableObjects())
+            routes.add(postCreateCodableObject())
+            routes.add(deleteTheCodableObject())
+            routes.add(putTheCodableObject())
+            routes.add(getNotesForTheUser())
+        }
+        
+        override func apiPathComponent() -> [PathComponent] {
+            super.apiPathComponent() + [.constant(T.schema)]
+        }
+        
+        override func finalComponents() -> [PathComponent] {
+            apiPathComponent() + pathVariableComponents()
+        }
+        
+        override func pathVariableComponents() -> [PathComponent] {
+            [.parameter(User.userId)]
+        }
+    }
+}
+
+// MARK: Helper
+
+extension NotesKit.UsersController {
     
     @discardableResult
     func postCreateCodableObject() -> Route {
@@ -76,14 +135,6 @@ extension UsersController {
         app.get(apiPathComponent(), use: getAllCodableObjectsHandler)
     }
     
-    @Sendable
-    func getAllCodableObjectsHandler(_ req: Request)
-    -> EventLoopFuture<AppResponse<[User.UserDTO]>> {
-        T.query(on: req.db).all().map { results in
-            results.map({ User.UserDTO(user: $0) }).successResponse()
-        }
-    }
-    
     @discardableResult
     func getSpecificCodableObjectHavingID() -> Route {
         app.get(finalComponents(),use: getSpecificCodableObjectHavingIDHandler)
@@ -91,7 +142,7 @@ extension UsersController {
     
     @Sendable
     func getSpecificCodableObjectHavingIDHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
         }
         return T.find(idValue, on: req.db).flatMap { value in
@@ -104,8 +155,49 @@ extension UsersController {
     }
     
     @Sendable
+    func getAllCodableObjectsHandler(_ req: Request)
+    -> EventLoopFuture<AppResponse<[User.UserDTO]>> {
+//        let isAscending = req.query[self.sortOrder] == self.ascending
+//        let isLikeWise = req.query[Bool.self, at: self.isLikeWise]
+//        let searchTerm = req.query[String.self, at: self.queryString]
+//        let userQueryBuilder: QueryBuilder<T> = T.query(on: req.db)
+        
+        return T.query(on: req.db).all().map { results in
+            results.map({ User.UserDTO(user: $0) }).successResponse()
+        }
+    }
+    
+    @Sendable
     func getNotesForTheUserHandler(_ req: Request) -> NotesEventLoopFuture<Note> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
+        }
+        let isAscending = req.query[self.sortOrder] == self.ascending
+        let isLikeWise = req.query[Bool.self, at: self.isLikeWise]
+        let searchTerm = req.query[String.self, at: self.queryString]
+        return T.find(idValue, on: req.db)
+            .unwrap(orError: AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+            .flatMap { user in
+                let userQueryBuilder: QueryBuilder<NotesController.T> = user.$notes.query(on: req.db)
+                if let searchTerm,let isLikeWise {
+                    if isLikeWise {
+                        userQueryBuilder.group(.or) { or in
+                            or.filter(\.filterSearchItem ~~ searchTerm)
+                        }
+                    } else {
+                        userQueryBuilder.group(.or) { or in
+                            or.filter(\.filterSearchItem == searchTerm)
+                        }
+                    }
+                }
+                return userQueryBuilder.sort(\.someComparable, isAscending ? .ascending : .descending)
+                    .all()
+            }.mappedToSuccessResponse()
+    }
+    
+    @Sendable
+    func getSortableFilteredUsers(_ req: Request) -> NotesEventLoopFuture<Note> {
+        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
         }
         let isAscending = req.query[self.sortOrder] == self.ascending
@@ -144,7 +236,7 @@ extension UsersController {
     
     @Sendable
     func deleteTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .DELETE)), data: nil))
         }
         return T.find(idValue, on: req.db)
@@ -169,7 +261,7 @@ extension UsersController {
     func putTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         do {
             let note = try req.content.decode(T.self, using: self.decoder)
-            guard let idValue = req.parameters.getCastedTID(T.self) ?? note.id else {
+            guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) ?? note.id else {
                 return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))
             }
             let found = T.find(idValue, on: req.db)
@@ -191,4 +283,5 @@ extension UsersController {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
         }
     }
+    
 }

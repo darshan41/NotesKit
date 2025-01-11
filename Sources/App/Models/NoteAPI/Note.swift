@@ -10,16 +10,31 @@ import Fluent
 
 protocol CustomEncodable { }
 
-
-final class Note: SortableItem,@unchecked Sendable {
+final class Note: SortableItem, @unchecked Sendable {
     
     typealias T = FieldProperty<Note, SortingValue>
     typealias U = FieldProperty<Note, FilteringValue>
+    
+    struct RequestDTO: Codable {
+        private(set) var id: UUID?
+        private(set) var note: String
+        private(set) var user: User.IDValue?
+        private(set) var cardColor: String
+        
+        init(from decoder: any Decoder) throws {
+            let container: KeyedDecodingContainer<Note.RequestDTO.CodingKeys> = try decoder.container(keyedBy: Note.RequestDTO.CodingKeys.self)
+            self.id = try container.decodeIfPresent(UUID.self, forKey: Note.RequestDTO.CodingKeys.id)
+            self.note = try container.decode(String.self, forKey: Note.RequestDTO.CodingKeys.note)
+            self.user = try container.decodeIfPresent(User.IDValue.self, forKey: Note.RequestDTO.CodingKeys.user)
+            self.cardColor = try container.decode(String.self, forKey: Note.RequestDTO.CodingKeys.cardColor)
+        }
+    }
     
     typealias SortingValue = Date
     typealias FilteringValue = String
     
     static let schema = "notes"
+    static let objectIdentifierKey: String = "noteID"
     
     static let date: FieldKey = FieldKey("date")
     static let note: FieldKey = FieldKey("note")
@@ -48,6 +63,14 @@ final class Note: SortableItem,@unchecked Sendable {
     var categories: [Category]
     
     init() { }
+    
+    init(requestDto: RequestDTO,userId: User.IDValue) {
+        self.id = requestDto.id
+        self.cardColor = requestDto.cardColor
+        self.note = requestDto.note
+        self.$user.id = userId
+        self.date = Date()
+    }
     
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

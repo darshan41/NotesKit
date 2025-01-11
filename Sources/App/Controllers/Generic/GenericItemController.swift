@@ -9,7 +9,7 @@ import Vapor
 import Fluent
 import Foundation
 
-open class GenericItemController<T: Notable>: GenericRootController<T>,VersionedRouteCollection {
+class GenericItemController<T: Notable>: GenericRootController<T>,VersionedRouteCollection, @unchecked Sendable {
     
     open func boot(routes: any Vapor.RoutesBuilder) throws {
         print("Adding Routes on \(Self.self)")
@@ -72,7 +72,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     
     @Sendable
     open func getSpecificCodableObjectHavingIDHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
             return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
         }
         return T.find(idValue, on: req.db).flatMap { value in
@@ -91,7 +91,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     
     @Sendable
     open func deleteTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .DELETE)), data: nil))
         }
         return T.find(idValue, on: req.db)
@@ -116,7 +116,7 @@ open class GenericItemController<T: Notable>: GenericRootController<T>,Versioned
     open func putTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         do {
             let note = try req.content.decode(T.self, using: self.decoder)
-            guard let idValue = req.parameters.getCastedTID(T.self) ?? note.id else {
+            guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) ?? note.id else {
                 return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))
             }
             let found = T.find(idValue, on: req.db)

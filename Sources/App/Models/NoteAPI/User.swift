@@ -8,16 +8,18 @@
 import Vapor
 import Fluent
 
-final class User: SortableItem,@unchecked Sendable,Encodable {
+final class User: SortableGenericItem,@unchecked Sendable,Encodable {
+    
+    typealias T = Date
+    typealias U = Name
     
     static let schema = "users"
+    static let objectIdentifierKey: String = "userID"
     
-    typealias T = FieldProperty<User, SortingValue>
-    typealias U = FieldProperty<User, FilteringValue>
+    typealias SortingValue = Date
+    typealias FilteringValue = Name
     
-    typealias SortingValue = FilteringValue
-    typealias FilteringValue = Date
-    
+    static let userId: String = "userId"
     static let name: FieldKey = FieldKey("name")
     static let userName: FieldKey = FieldKey("userName")
     static let email:  FieldKey = FieldKey("email")
@@ -137,9 +139,13 @@ extension User {
         case updatedDate
     }
     
-    var someComparable: FluentKit.FieldProperty<User, SortingValue> { self.$updatedDate }
+    var someComparable: AProperty<User, Date> {
+        AProperty(wrappedValue: self.updatedDate)
+    }
     
-    var filterSearchItem: FluentKit.FieldProperty<User, FilteringValue> { self.$updatedDate }
+    var filterSearchItem: AProperty<User, Name> {
+        AProperty(wrappedValue: self.name)
+    }
     
     func requestUpdate(with newValue: User) -> User {
         self.name = newValue.name
@@ -168,5 +174,3 @@ extension User: Comparable {
         lhs.id == rhs.id
     }
 }
-
-

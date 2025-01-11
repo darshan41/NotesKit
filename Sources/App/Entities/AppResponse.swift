@@ -25,7 +25,7 @@ public protocol AppResponsible: ResponseEncodable,NoteResponseEncodable,Content,
     )
 }
 
-public struct AppResponse<T: Content>: AppResponsible {
+public struct AppResponse<T: Content>: AppResponsible, @unchecked Sendable {
     
     public enum CodingKeys: String,CodingKey {
         case code
@@ -76,8 +76,8 @@ public struct AppResponse<T: Content>: AppResponsible {
     public let code: HTTPResponseStatus
     public let error: ErrorMessage?
     public let data: T?
-    public private (set)var isServerGeneratedError: Bool = false
-    public private (set)var isUserShowableErrorMessage: Bool = false
+    public private(set)var isServerGeneratedError: Bool = false
+    public private(set)var isUserShowableErrorMessage: Bool = false
     
     public var identifier: String { error?.identifier ?? "" }
     public var reason: String { error?.reason ?? "" }

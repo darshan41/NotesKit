@@ -32,6 +32,9 @@ public typealias NotesEventLoopFuture<T: Model & Content> = EventLoopFuture<AppR
 
 public protocol Modelable: CustomModel & Content {
     
+    /// Must be the @ID's Key
+    static var objectIdentifierKey: String { get }
+    
     func asNotableResponse(with status: HTTPResponseStatus,error: ErrorMessage?) -> AppResponse<Self>
     
 }
@@ -65,7 +68,7 @@ extension CustomModel {
 /// Cool, Very Cool
 public protocol SortableItem: Notable {
     
-    typealias AProperAssociatedObject =  Decodable & Encodable & Sendable & Comparable
+    typealias AProperAssociatedObject =  Decodable & Encodable & Sendable & Comparable & Equatable
     
     associatedtype SortingValue: AProperAssociatedObject
     associatedtype FilteringValue: AProperAssociatedObject
@@ -75,6 +78,20 @@ public protocol SortableItem: Notable {
     
     var someComparable: T { get }
     var filterSearchItem: U { get }
+}
+
+public protocol SortableGenericItem: Notable {
+    
+    typealias AProperAssociatedObject = Codable & Sendable & Comparable & Equatable
+    
+    associatedtype SortingValue: AProperAssociatedObject
+    associatedtype FilteringValue: AProperAssociatedObject
+    
+    associatedtype T: AProperAssociatedObject
+    associatedtype U: AProperAssociatedObject
+    
+    var someComparable: AProperty<Self, T> { get }
+    var filterSearchItem: AProperty<Self, U> { get }
 }
 
 extension Modelable {
@@ -92,6 +109,3 @@ extension Modelable {
     }
 }
 
-extension ParentProperty: Encodable { }
-
-extension ChildrenProperty: Encodable { }

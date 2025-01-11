@@ -8,21 +8,22 @@
 import Vapor
 import Fluent
 
-open class GenericRootController<T: Notable>: @unchecked Sendable {
+class GenericRootController<T: Notable>: @unchecked Sendable {
     
-    private (set)var decoder: JSONDecoder
+    private(set)var decoder: JSONDecoder
     
-    private (set)var app: Application
-    private (set)open var version: APIVersion
-  
-    init(
-        app: Application,
-        version: APIVersion,
+    private(set)var app: Application
+    private(set)open var version: APIVersion
+    private(set)open var manager: ApplicationManager
+    
+    init<Manager: ApplicationManager>(
+        kit: Manager,
         decoder: JSONDecoder = JSONDecoder()
     ) {
-        self.app = app
-        self.version = version
+        self.app = kit.app
+        self.version = kit.apiVersion
         self.decoder = decoder
+        self.manager = kit
     }
         
     open func generateUnableToFind(forRequested id: T.IDValue) -> String {
@@ -30,11 +31,11 @@ open class GenericRootController<T: Notable>: @unchecked Sendable {
     }
     
     open func generateUnableToFindAny(forRequested type: T.Type,for method: HTTPMethod) -> String {
-        "ID for path to \(method.rawValue.lowercased()) for an \(type) item must be present, eg: type/{particular-id-for-\(String.init(describing: type).lowercased())item.}"
+        "ID for path to \(method.rawValue.lowercased()) for an \(type) item must be present, eg: type/{\(type.objectIdentifierKey)} item.}"
     }
     
     open func generateUnableToFindAny(forRequested id: UUID,for method: HTTPMethod) -> String {
-        "ID for path to \(method.rawValue.lowercased()) for an \(id) item must be present, eg: type/{particular-id-for-\(String.init(describing: id).lowercased())item.}"
+        "ID for path to \(method.rawValue.lowercased()) for an \(id) item must be present, eg: type/{particular-id-for-\(String.init(describing: id).lowercased())item.} "
     }
     
     /// By Default All POST and Get use this.... as last path.

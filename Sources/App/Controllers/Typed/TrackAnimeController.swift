@@ -8,7 +8,7 @@
 import Vapor
 import Fluent
 
-class TrackAnimeController: GenericItemController<Anime> {
+class TrackAnimeController: GenericItemController<Anime>, @unchecked Sendable {
     
     private typealias T = Anime
     
@@ -50,10 +50,4 @@ extension TrackAnimeController {
         let isAscending = req.query[self.sortOrder] == self.ascending
         return T.query(on: req.db).sort(\.someComparable,isAscending ? .ascending : .descending).all().mappedToSuccessResponse()
     }
-}
-
-// MARK: Helper func's
-
-private extension NotesController {
-    
 }

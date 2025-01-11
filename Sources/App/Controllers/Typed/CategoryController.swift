@@ -8,51 +8,49 @@
 import Vapor
 import Fluent
 
-class CategoryController<T: Category>: GenericRootController<T>,VersionedRouteCollection {
+extension NotesKit {
     
-    private let notes: String = "notes"
-    
-    private typealias T = Category
-    
-    private let search: String = "search"
-    private let queryString: String = "query"
-    private let sorted: String = "sorted"
-    private let sortOrder: String = "sortOrder"
-    private let ascending: String = "ascending"
-    private let isLikeWise: String = "isLikeWise"
-    private let filter: String = "filter"
-    
-    override init(
-        app: Application,
-        version: APIVersion,
-        decoder: JSONDecoder = AppDecoder.shared.iso8601JSONDeocoder
-    ) {
-        super.init(app: app, version: version, decoder: decoder)
-    }
-    
-    func boot(routes: any Vapor.RoutesBuilder) throws {
-        routes.add(getSpecificCodableObjectHavingID())
-        routes.add(getAllCodableObjects())
-        routes.add(postCreateCodableObject())
-        routes.add(deleteTheCodableObject())
-        routes.add(putTheCodableObject())
-//        routes.add(getNotesForTheUser())
-    }
-    
-    override func apiPathComponent() -> [PathComponent] {
-        super.apiPathComponent() + [.constant(T.schema)]
-    }
-    
-    override func finalComponents() -> [PathComponent] {
-        apiPathComponent() + pathVariableComponents()
-    }
-    
-    override func pathVariableComponents() -> [PathComponent] {
-        [.parameter(.id)]
+    class CategoryController: GenericRootController<Category>, VersionedRouteCollection, @unchecked Sendable {
+        
+        private let notes: String = "notes"
+        
+        typealias T = Category
+        
+        private let search: String = "search"
+        private let queryString: String = "query"
+        private let sorted: String = "sorted"
+        private let sortOrder: String = "sortOrder"
+        private let ascending: String = "ascending"
+        private let isLikeWise: String = "isLikeWise"
+        private let filter: String = "filter"
+     
+        
+        public func boot(routes: any Vapor.RoutesBuilder) throws {
+            routes.add(getSpecificCodableObjectHavingID())
+            routes.add(getAllCodableObjects())
+            routes.add(postCreateCodableObject())
+            routes.add(deleteTheCodableObject())
+            routes.add(putTheCodableObject())
+//            routes.add(getNotesForTheUser())
+        }
+        
+        override func apiPathComponent() -> [PathComponent] {
+            super.apiPathComponent() + [.constant(T.schema)]
+        }
+        
+        override func finalComponents() -> [PathComponent] {
+            apiPathComponent() + pathVariableComponents()
+        }
+        
+        override func pathVariableComponents() -> [PathComponent] {
+            [.parameter(.id)]
+        }
     }
 }
 
-extension CategoryController {
+// MARK: Helper func's
+
+extension NotesKit.CategoryController {
     
     @discardableResult
     func postCreateCodableObject() -> Route {
@@ -87,7 +85,7 @@ extension CategoryController {
     
     @Sendable
     func getSpecificCodableObjectHavingIDHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
             return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
         }
         return T.find(idValue, on: req.db).flatMap { value in
@@ -106,7 +104,7 @@ extension CategoryController {
     
     @Sendable
     func deleteTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .DELETE)), data: nil))
         }
         return T.find(idValue, on: req.db)
@@ -130,7 +128,7 @@ extension CategoryController {
     func putTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         do {
             let note = try req.content.decode(T.self, using: self.decoder)
-            guard let idValue = req.parameters.getCastedTID(T.self) ?? note.id else {
+            guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) ?? note.id else {
                 return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)))
             }
             let found = T.find(idValue, on: req.db)

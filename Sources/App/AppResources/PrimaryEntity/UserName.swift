@@ -38,10 +38,12 @@ public extension UserName {
     var description: String { username }
     
     static func isValidUserName(_ username: String) -> Bool {
+        let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let usernameRegex = "^[a-zA-Z0-9_]{4,16}$"
         let usernamePredicate = NSPredicate(format: "SELF MATCHES %@", usernameRegex)
-        return usernamePredicate.evaluate(with: username)
+        return usernamePredicate.evaluate(with: trimmedUsername)
     }
+
 }
 
 // MARK: Helper func's

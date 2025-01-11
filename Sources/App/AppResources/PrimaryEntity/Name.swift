@@ -102,3 +102,10 @@ extension Name {
         case invalidNameFormat
     }
 }
+
+extension Name: Comparable {
+    
+    public static func < (lhs: Name, rhs: Name) -> Bool {
+        lhs.name < rhs.name
+    }   
+}

@@ -12,6 +12,7 @@ import Vapor
 final class Category: SortableItem,@unchecked Sendable,Encodable {
     
     static let schema = "categories"
+    static let objectIdentifierKey: String = "categoryID"
     
     static let name: FieldKey = FieldKey("name")
     static let createdDate: FieldKey = FieldKey("createdDate")
@@ -58,7 +59,7 @@ final class Category: SortableItem,@unchecked Sendable,Encodable {
 
 extension Category {
     
-    struct CategoryDTO: Codable,Content {
+    public struct CategoryDTO: Codable,Content {
         let id: Category.IDValue?
         let name: String
         let createdDate: Date

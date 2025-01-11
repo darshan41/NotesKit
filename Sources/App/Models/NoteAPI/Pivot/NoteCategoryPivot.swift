@@ -10,6 +10,8 @@ import Fluent
 
 final class NoteCategoryPivot: SortableItem,@unchecked Sendable {
     
+    static let objectIDKey: String = "''"
+    
     typealias SortingValue = Date
     typealias FilteringValue = Date
     
@@ -17,6 +19,7 @@ final class NoteCategoryPivot: SortableItem,@unchecked Sendable {
     typealias U = FieldProperty<NoteCategoryPivot, SortingValue>
     
     static let schema = "note-categories"
+    static let objectIdentifierKey: String = "noteCategoryID"
     
     static let noteID: FieldKey = FieldKey("noteID")
     static let categoryID: FieldKey = FieldKey("categoryID")

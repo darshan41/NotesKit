@@ -17,7 +17,7 @@ final class Anime: Notable,@unchecked Sendable {
     typealias FilteringValue = URL
     
     static let schema = "anime"
-    
+    static let objectIdentifierKey: String = "animeID"
     static let date: FieldKey = FieldKey("date")
     static let originalURL: FieldKey = FieldKey("originalURL")
     static let titleRegexs: FieldKey = FieldKey("titleRegexs")

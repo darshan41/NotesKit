@@ -9,7 +9,7 @@ import Vapor
 import Fluent
 
 @available(*, unavailable)
-class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T> where T.FilteringValue == U.Value {
+class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringValue>>: GenericItemController<T>, @unchecked Sendable where T.FilteringValue == U.Value {
     
     private let search: String = "search"
     private let queryString: String = "query"
@@ -18,12 +18,11 @@ class GenericNotesController<T: SortableItem, U: FieldProperty<T, T.FilteringVal
     private let sortOrder: String = "sortOrder"
     private let ascending: String = "ascending"
     
-    override init(
-        app: Application,
-        version: APIVersion,
+    public override init<Manager: ApplicationManager>(
+        kit: Manager,
         decoder: JSONDecoder = AppDecoder.shared.iso8601JSONDeocoder
     ) {
-        super.init(app: app, version: version, decoder: AppDecoder.shared.iso8601JSONDeocoder)
+        super.init(kit: kit, decoder: decoder)
     }
     
     override func boot(routes: any RoutesBuilder) throws {

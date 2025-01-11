@@ -8,56 +8,73 @@
 import Vapor
 import Fluent
 
-class NotesController: GenericRootController<Note>,VersionedRouteCollection {
+extension NotesKit {
     
-    typealias T = Note
-    
-    private let search: String = "search"
-    private let queryString: String = "query"
-    private let sorted: String = "sorted"
-    private let sortOrder: String = "sortOrder"
-    private let ascending: String = "ascending"
-    private let isLikeWise: String = "isLikeWise"
-    private let filter: String = "filter"
-    
-    override init(app: Application, version: APIVersion, decoder: JSONDecoder = JSONDecoder()) {
-        super.init(app: app, version: version)
-    }
-    
-    func boot(routes: any RoutesBuilder) throws {
-        routes.add(getAllCodableObjects())
-        routes.add(postCreateCodableObject())
-        routes.add(getSpecificCodableObjectHavingID())
-    }
-    
-    override func apiPathComponent() -> [PathComponent] {
-        super.apiPathComponent() + [.constant(T.schema)]
-    }
-    
-    override func finalComponents() -> [PathComponent] {
-        apiPathComponent() + pathVariableComponents()
-    }
-    
-    override func pathVariableComponents() -> [PathComponent] {
-        [.parameter(.id)]
-    }
-    
-    func getAllCodableObjects() -> Route {
-        app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
-            T.query(on: req.db).all().mappedToSuccessResponse()
+    class NotesController: GenericRootController<Note>, VersionedRouteCollection, @unchecked Sendable {
+        
+        typealias T = Note
+        
+        private let search: String = "search"
+        private let queryString: String = "query"
+        private let sorted: String = "sorted"
+        private let sortOrder: String = "sortOrder"
+        private let ascending: String = "ascending"
+        private let isLikeWise: String = "isLikeWise"
+        private let filter: String = "filter"
+        
+        public override init<Manager: ApplicationManager>(
+            kit: Manager,
+            decoder: JSONDecoder = AppDecoder.shared.iso8601JSONDeocoder
+        ) {
+            super.init(kit: kit, decoder: decoder)
         }
-    }
-    
-    func getSpecificCodableObjectHavingID() -> Route {
-        app.get(finalComponents()) { req -> NoteEventLoopFuture<T> in
-            guard let idValue = req.parameters.getCastedTID(T.self) else {
-                return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
+        
+        func boot(routes: any RoutesBuilder) throws {
+            routes.add(getAllCodableObjects())
+            routes.add(postCreateCodableObject())
+            routes.add(getSpecificCodableObjectHavingID())
+            routes.add(putTheCodableObject())
+        }
+        
+        override func apiPathComponent() -> [PathComponent] {
+            manager.usersController.finalComponents() + [.constant(T.schema)]
+        }
+        
+        override func finalComponents() -> [PathComponent] {
+            apiPathComponent() + pathVariableComponents()
+        }
+        
+        override func pathVariableComponents() -> [PathComponent] {
+            [.parameter(T.objectIdentifierKey)]
+        }
+        
+        func getAllCodableObjects() -> Route {
+            app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
+                T.query(on: req.db).all().mappedToSuccessResponse()
             }
-            return T.find(idValue, on: req.db).flatMap { value in
-                if let wrapped = value {
-                    return req.makeFutureSuccess(with: wrapped)
-                } else {
-                    return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
+        }
+        
+        @discardableResult
+        func putTheCodableObject() -> Route {
+            app.put(finalComponents(),use: putTheCodableObjectHandler)
+        }
+        
+        @discardableResult
+        func putTheCodableObjectOfTheUser() -> Route {
+            app.put(finalComponents(),use: putTheCodableObjectHandler)
+        }
+        
+        func getSpecificCodableObjectHavingID() -> Route {
+            app.get(finalComponents()) { req -> NoteEventLoopFuture<T> in
+                guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
+                    return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)))
+                }
+                return T.find(idValue, on: req.db).flatMap { value in
+                    if let wrapped = value {
+                        return req.makeFutureSuccess(with: wrapped)
+                    } else {
+                        return req.mapFuturisticFailureOnThisEventLoop(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: idValue)))
+                    }
                 }
             }
         }
@@ -66,7 +83,9 @@ class NotesController: GenericRootController<Note>,VersionedRouteCollection {
 
 // MARK: Public func's
 
-extension NotesController {
+extension NotesKit.NotesController {
+    
+    typealias NotesController = NotesKit.NotesController
     
     @discardableResult
     func getAllNotesInSorted() -> Route {
@@ -111,10 +130,34 @@ extension NotesController {
             return note.save(on: req.db).mapNewResponseFromVoid(newValue: note, .created)
         }
     }
+    
+    @Sendable
+    func putTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
+        do {
+            let noteDTO = try req.content.decode(T.RequestDTO.self, using: self.decoder)
+            let userId = try req.parameters.require(User.userId, as: User.IDValue.self)
+            let note = Note(requestDto: noteDTO, userId: userId)
+            guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
+                return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))
+            }
+            let found = T.find(idValue, on: req.db)
+            let mapped = found.flatMap { wrapped -> NoteEventLoopFuture<T>  in
+                if let wrapped {
+                    let value = wrapped.requestUpdate(with: note)
+                    return value.save(on: req.db).mapNewResponseFromVoid(newValue: wrapped)
+                } else {
+                    return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFind(forRequested: idValue)), data: nil))
+                }
+            }
+            return mapped
+        } catch {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
+        }
+    }
 }
 
 // MARK: Helper func's
 
-private extension NotesController {
+private extension NotesKit.NotesController {
     
 }
