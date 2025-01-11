@@ -34,6 +34,9 @@ extension NotesKit {
             routes.add(postCreateCodableObject())
             routes.add(getSpecificCodableObjectHavingID())
             routes.add(putTheCodableObject())
+            
+            routes.add(getAllNotesInSorted())
+            routes.add(getAllNotesInFiltered())
         }
         
         override func apiPathComponent() -> [PathComponent] {
@@ -49,8 +52,14 @@ extension NotesKit {
         }
         
         func getAllCodableObjects() -> Route {
-            app.get(apiPathComponent()) { req -> NotesEventLoopFuture in
-                T.query(on: req.db).all().mappedToSuccessResponse()
+            app.get(apiPathComponent()) { req -> NotesEventLoopFuture<T> in
+                guard let userID = req.parameters.getCastedTID(name: User.objectIdentifierKey, User.self) else {
+                    return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), value: [T].self)
+                }
+                return T.query(on: req.db)
+                    .filter(\.$user.$id == userID)
+                    .all()
+                    .mappedToSuccessResponse()
             }
         }
         
@@ -125,9 +134,15 @@ extension NotesKit.NotesController {
     
     @Sendable
     func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<T>> {
-        req.perform { req in
-            let note = try req.content.decode(T.self, using: self.decoder)
-            return note.save(on: req.db).mapNewResponseFromVoid(newValue: note, .created)
+        do {
+            let noteDTO = try req.content.decode(T.RequestDTO.self, using: self.decoder)
+            let userId = try req.parameters.require(User.objectIdentifierKey, as: User.IDValue.self)
+            let note = Note(requestDto: noteDTO, userId: userId)
+            return req.perform { req in
+                return note.save(on: req.db).mapNewResponseFromVoid(newValue: note, .created)
+            }
+        } catch {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
         }
     }
     
@@ -135,7 +150,7 @@ extension NotesKit.NotesController {
     func putTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         do {
             let noteDTO = try req.content.decode(T.RequestDTO.self, using: self.decoder)
-            let userId = try req.parameters.require(User.userId, as: User.IDValue.self)
+            let userId = try req.parameters.require(User.objectIdentifierKey, as: User.IDValue.self)
             let note = Note(requestDto: noteDTO, userId: userId)
             guard let idValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
                 return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))

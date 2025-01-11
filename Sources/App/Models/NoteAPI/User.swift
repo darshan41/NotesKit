@@ -18,8 +18,7 @@ final class User: SortableGenericItem,@unchecked Sendable,Encodable {
     
     typealias SortingValue = Date
     typealias FilteringValue = Name
-    
-    static let userId: String = "userId"
+        
     static let name: FieldKey = FieldKey("name")
     static let userName: FieldKey = FieldKey("userName")
     static let email:  FieldKey = FieldKey("email")

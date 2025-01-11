@@ -104,7 +104,7 @@ extension NotesKit {
         }
         
         override func pathVariableComponents() -> [PathComponent] {
-            [.parameter(User.userId)]
+            [.parameter(User.objectIdentifierKey)]
         }
     }
 }
@@ -142,7 +142,7 @@ extension NotesKit.UsersController {
     
     @Sendable
     func getSpecificCodableObjectHavingIDHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.objectIdentifierKey,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
         }
         return T.find(idValue, on: req.db).flatMap { value in
@@ -169,7 +169,7 @@ extension NotesKit.UsersController {
     
     @Sendable
     func getNotesForTheUserHandler(_ req: Request) -> NotesEventLoopFuture<Note> {
-        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.objectIdentifierKey,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
         }
         let isAscending = req.query[self.sortOrder] == self.ascending
@@ -197,7 +197,7 @@ extension NotesKit.UsersController {
     
     @Sendable
     func getSortableFilteredUsers(_ req: Request) -> NotesEventLoopFuture<Note> {
-        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.objectIdentifierKey,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .GET)), data: nil))
         }
         let isAscending = req.query[self.sortOrder] == self.ascending
@@ -236,7 +236,7 @@ extension NotesKit.UsersController {
     
     @Sendable
     func deleteTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
-        guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) else {
+        guard let idValue = req.parameters.getCastedTID(name: User.objectIdentifierKey,T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .DELETE)), data: nil))
         }
         return T.find(idValue, on: req.db)
@@ -261,7 +261,7 @@ extension NotesKit.UsersController {
     func putTheCodableObjectHandler(_ req: Request) -> NoteEventLoopFuture<T> {
         do {
             let note = try req.content.decode(T.self, using: self.decoder)
-            guard let idValue = req.parameters.getCastedTID(name: User.userId,T.self) ?? note.id else {
+            guard let idValue = req.parameters.getCastedTID(name: User.objectIdentifierKey,T.self) ?? note.id else {
                 return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .PUT)), data: nil))
             }
             let found = T.find(idValue, on: req.db)

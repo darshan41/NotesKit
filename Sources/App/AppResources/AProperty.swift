@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AProperty.swift
 //  NotesKit
 //
 //  Created by Darshan S on 11/01/25.
@@ -10,7 +10,7 @@ import Fluent
 
 public struct AProperty<Item: SortableGenericItem, Value: SortableItem.AProperAssociatedObject>: Comparable {
     
-    var value: Value
+    private(set) var value: Value
     
     public var wrappedValue: Value {
         value
