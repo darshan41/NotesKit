@@ -31,6 +31,8 @@ extension NotesKit {
             routes.add(deleteTheCodableObject())
             routes.add(putTheCodableObject())
             routes.add(createCategoryRefereingANote())
+            routes.add(getAllNotesForGivenCategoryGlobally())
+            routes.add(getTheCategoryInfo())
         }
         
         override func apiPathComponent() -> [PathComponent] {
@@ -73,6 +75,33 @@ extension NotesKit.CategoryController {
     @discardableResult
     func getAllCodableObjects() -> Route {
         app.get(apiPathComponent(), use: getAllCodableObjectsHandler)
+    }
+    
+    @discardableResult
+    func getAllNotesForGivenCategoryGlobally() -> Route {
+        app.get(finalComponents() + [.parameter(Note.schema)], use: getAllNotesForGivenCategoryHandler)
+    }
+    
+    @discardableResult
+    func getTheCategoryInfo() -> Route {
+        let pathComponent = manager.notesController.finalComponents() + [.constant(Category.schema),.parameter(Category.objectIdentifierKey)]
+        let route = app.get(pathComponent, use: getSpecificCodableObjectHavingIDHandler)
+        return route
+    }
+    
+    @Sendable
+    func getAllNotesForGivenCategoryHandler(_ req: Request) -> EventLoopFuture<AppResponse<[Note]>> {
+        guard let categoryIDValue = req.parameters.getCastedTID(name: Category.objectIdentifierKey, Category.self) else {
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Category.self, for: req.method)))
+        }
+        return T.find(categoryIDValue, on: req.db)
+            .flatMap { category -> EventLoopFuture<AppResponse<[Note]>> in
+                if let category {
+                    return category.$notes.get(on: req.db).mappedToSuccessResponse()
+                } else {
+                    return req.eventLoop.future(AppResponse(code: .notFound, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: req.method)), data: nil))
+                }
+            }
     }
     
     @discardableResult

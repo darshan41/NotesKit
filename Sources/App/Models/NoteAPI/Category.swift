@@ -42,7 +42,7 @@ final class Category: SortableGenericItem, @unchecked Sendable,Encodable {
         through: NoteCategoryPivot.self,
         from: \.$category,
         to: \.$note)
-    var acronyms: [Note]
+    var notes: [Note]
     
     init() { }
     

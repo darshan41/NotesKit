@@ -34,9 +34,10 @@ extension NotesKit {
             routes.add(postCreateCodableObject())
             routes.add(getSpecificCodableObjectHavingID())
             routes.add(putTheCodableObject())
-            
             routes.add(getAllNotesInSorted())
             routes.add(getAllNotesInFiltered())
+            routes.add(getTheCategoriesForNotes())
+            routes.add(getTheNotesForCategories())
         }
         
         override func apiPathComponent() -> [PathComponent] {
@@ -52,15 +53,18 @@ extension NotesKit {
         }
         
         func getAllCodableObjects() -> Route {
-            app.get(apiPathComponent()) { req -> NotesEventLoopFuture<T> in
-                guard let userID = req.parameters.getCastedTID(name: User.objectIdentifierKey, User.self) else {
-                    return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), value: [T].self)
-                }
-                return T.query(on: req.db)
-                    .filter(\.$user.$id == userID)
-                    .all()
-                    .mappedToSuccessResponse()
+            app.get(apiPathComponent(), use: getAllCodableObjectsHandler)
+        }
+        
+        @Sendable
+        func getAllCodableObjectsHandler(req: Request) -> NotesEventLoopFuture<T> {
+            guard let userID = req.parameters.getCastedTID(name: User.objectIdentifierKey, User.self) else {
+                return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToPerformOperationOnQuery(forRequested: self.queryString)), value: [T].self)
             }
+            return T.query(on: req.db)
+                .filter(\.$user.$id == userID)
+                .all()
+                .mappedToSuccessResponse()
         }
         
         @discardableResult
@@ -124,6 +128,51 @@ extension NotesKit.NotesController {
                 }
             }
             return builder.all().mappedToSuccessResponse()
+        }
+    }
+    
+    @discardableResult
+    func getTheCategoriesForNotes() -> Route {
+        app.get(finalComponents() + [.constant(Category.schema)],use: getTheCategoriesForNotesHandler)
+    }
+    
+    @discardableResult
+    func getTheNotesForCategories() -> Route {
+        app.get(finalComponents() + [.constant(Category.schema),.parameter(Category.objectIdentifierKey) , .constant(Note.schema)], use: getTheNotesForCategoriesHandler)
+    }
+    
+    
+    @Sendable
+    func getTheNotesForCategoriesHandler(_ req: Request) -> EventLoopFuture<AppResponse<[Note]>> {
+        guard let userID = req.parameters.getCastedTID(name: User.objectIdentifierKey, User.self) else {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: User.self, for: req.method)), data: nil))
+        }
+        guard let noteIDValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: req.method)), data: nil))
+        }
+//        guard let categoryIDValue = req.parameters.getCastedTID(name: Category.objectIdentifierKey, Category.self) else {
+//            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Category.self, for: req.method)), data: nil))
+//        }
+        let notesQuery = T.query(on: req.db).filter(\.$user.$id == userID)
+        return notesQuery.filter(\.$id == noteIDValue).all().mappedToSuccessResponse()
+    }
+    
+    @Sendable
+    func getTheCategoriesForNotesHandler(_ req: Request) -> EventLoopFuture<AppResponse<[Category.CategoryDTO]>> {
+        guard let userID = req.parameters.getCastedTID(name: User.objectIdentifierKey, User.self) else {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: User.self, for: req.method)), data: nil))
+        }
+        guard let noteIDValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
+            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: req.method)), data: nil))
+        }
+        let userQuery = T.query(on: req.db).filter(\.$user.$id == userID)
+        let first = userQuery.filter(\.$id == noteIDValue).first()
+        return first.flatMap { note in
+            if let note {
+                return note.$categories.query(on: req.db).all().transformElementsWithEventLoopAppResponse(using: { Category.CategoryDTO(category: $0)})
+            } else {
+                return req.eventLoop.future(AppResponse(code: .notFound, error: .customString(self.generateUnableToFindAny(forRequested: Note.self, for: req.method)), data: nil))
+            }
         }
     }
     
