@@ -33,6 +33,7 @@ extension NotesKit {
             routes.add(createCategoryRefereingANote())
             routes.add(getAllNotesForGivenCategoryGlobally())
             routes.add(getTheCategoryInfo())
+            routes.add(deleteCategoryRefereingANote())
         }
         
         override func apiPathComponent() -> [PathComponent] {
@@ -112,13 +113,21 @@ extension NotesKit.CategoryController {
         )
     }
     
+    @discardableResult
+    func deleteCategoryRefereingANote() -> Route {
+        app.delete(
+            manager.notesController.finalComponents() + [.constant(T.schema)] + pathVariableComponents(),
+            use: deleteCategoryRefereingANoteHandler
+        )
+    }
+    
     @Sendable
     func createCategoryRefereingANoteHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category>> {
         guard let noteIDValue = req.parameters.getCastedTID(name: Note.objectIdentifierKey, Note.self) else {
-            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Note.self, for: .POST)))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Note.self, for: req.method)))
         }
         guard let categoryIDValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
-            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .POST)))
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: req.method)))
         }
         let noteFinder = Note.find(noteIDValue, on: req.db)
             .unwrap(orError: AppResponse<Note>(code: .notFound, error: .customString(self.generateUnableToFindForModel(forRequested: noteIDValue,valueType: Note.self)), data: nil))
@@ -130,6 +139,27 @@ extension NotesKit.CategoryController {
                     .$categories
                     .attach(category, on: req.db)
                     .transform(to: AppResponse<Category>.init(code: .created, error: nil, data: category))
+            }
+    }
+    
+    @Sendable
+    func deleteCategoryRefereingANoteHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category>> {
+        guard let noteIDValue = req.parameters.getCastedTID(name: Note.objectIdentifierKey, Note.self) else {
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Note.self, for: req.method)))
+        }
+        guard let categoryIDValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: req.method)))
+        }
+        let noteFinder = Note.find(noteIDValue, on: req.db)
+            .unwrap(orError: AppResponse<Note>(code: .notFound, error: .customString(self.generateUnableToFindForModel(forRequested: noteIDValue,valueType: Note.self)), data: nil))
+        let categoryFinder = T.find(categoryIDValue, on: req.db)
+            .unwrap(orError: AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: categoryIDValue)), data: nil))
+        return noteFinder.and(categoryFinder)
+            .flatMap { note, category in
+                note
+                    .$categories
+                    .detach(category, on: req.db)
+                    .transform(to: AppResponse<Category>.init(code: .ok, error: nil, data: category))
             }
     }
     

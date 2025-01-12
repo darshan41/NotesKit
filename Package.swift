@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "NotesKit",
     platforms: [
-       .macOS(.v13)
+        .macOS(.v13)
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
@@ -14,6 +14,9 @@ let package = Package(
         // 🐘 Fluent driver for Postgres.
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
         
+        .package(
+            url: "https://github.com/vapor/leaf.git",
+            from: "4.4.0")
     ],
     targets: [
         .executableTarget(
@@ -22,6 +25,7 @@ let package = Package(
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Vapor", package: "vapor"),
+                .product(name: "Leaf", package: "leaf")
             ],
             swiftSettings: swiftSettings
         ),

@@ -150,9 +150,6 @@ extension NotesKit.NotesController {
         guard let noteIDValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: req.method)), data: nil))
         }
-//        guard let categoryIDValue = req.parameters.getCastedTID(name: Category.objectIdentifierKey, Category.self) else {
-//            return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Category.self, for: req.method)), data: nil))
-//        }
         let notesQuery = T.query(on: req.db).filter(\.$user.$id == userID)
         return notesQuery.filter(\.$id == noteIDValue).all().mappedToSuccessResponse()
     }
