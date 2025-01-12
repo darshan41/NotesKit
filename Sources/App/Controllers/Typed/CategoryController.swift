@@ -23,7 +23,6 @@ extension NotesKit {
         private let ascending: String = "ascending"
         private let isLikeWise: String = "isLikeWise"
         private let filter: String = "filter"
-     
         
         public func boot(routes: any Vapor.RoutesBuilder) throws {
             routes.add(getSpecificCodableObjectHavingID())
@@ -31,11 +30,15 @@ extension NotesKit {
             routes.add(postCreateCodableObject())
             routes.add(deleteTheCodableObject())
             routes.add(putTheCodableObject())
-//            routes.add(getNotesForTheUser())
+            routes.add(createCategoryRefereingANote())
         }
         
         override func apiPathComponent() -> [PathComponent] {
             super.apiPathComponent() + [.constant(T.schema)]
+        }
+        
+        func apiPathComponentForUserCategories() -> [PathComponent] {
+            manager.usersController.finalComponents() + [.constant(T.schema)]
         }
         
         override func finalComponents() -> [PathComponent] {
@@ -43,7 +46,7 @@ extension NotesKit {
         }
         
         override func pathVariableComponents() -> [PathComponent] {
-            [.parameter(.id)]
+            [.parameter(T.objectIdentifierKey)]
         }
     }
 }
@@ -72,10 +75,58 @@ extension NotesKit.CategoryController {
         app.get(apiPathComponent(), use: getAllCodableObjectsHandler)
     }
     
+    @discardableResult
+    func createCategoryRefereingANote() -> Route {
+        app.post(
+            manager.notesController.finalComponents() + [.constant(T.schema)] + pathVariableComponents(),
+            use: createCategoryRefereingANoteHandler
+        )
+    }
+    
+    @Sendable
+    func createCategoryRefereingANoteHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category>> {
+        guard let noteIDValue = req.parameters.getCastedTID(name: Note.objectIdentifierKey, Note.self) else {
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAnyModel(forRequested: Note.self, for: .POST)))
+        }
+        guard let categoryIDValue = req.parameters.getCastedTID(name: T.objectIdentifierKey, T.self) else {
+            return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(self.generateUnableToFindAny(forRequested: T.self, for: .POST)))
+        }
+        let noteFinder = Note.find(noteIDValue, on: req.db)
+            .unwrap(orError: AppResponse<Note>(code: .notFound, error: .customString(self.generateUnableToFindForModel(forRequested: noteIDValue,valueType: Note.self)), data: nil))
+        let categoryFinder = T.find(categoryIDValue, on: req.db)
+            .unwrap(orError: AppResponse<T>(code: .notFound, error: .customString(self.generateUnableToFind(forRequested: categoryIDValue)), data: nil))
+        return noteFinder.and(categoryFinder)
+            .flatMap { note, category in
+                note
+                    .$categories
+                    .attach(category, on: req.db)
+                    .transform(to: AppResponse<Category>.init(code: .created, error: nil, data: category))
+            }
+    }
+    
     @Sendable
     func getAllCodableObjectsHandler(_ req: Request)
     -> EventLoopFuture<AppResponse<[Category.CategoryDTO]>> {
-        T.query(on: req.db).all().transformElementsWithEventLoopAppResponse(using: { Category.CategoryDTO(category: $0) })
+        let builder: QueryBuilder<T>
+        if let searchTerm = req.query[String.self, at: self.queryString], !searchTerm.isEmpty {
+            let isLikeWise = req.query[Bool.self, at: self.isLikeWise] ?? false
+            if isLikeWise {
+                builder = T.query(on: req.db).group(.or) { or in
+                    or.filter(\.$name == searchTerm)
+                }
+            } else {
+                builder = T.query(on: req.db).group(.or) { or in
+                    or.filter(\.$name ~~ searchTerm)
+                }
+            }
+        } else {
+            builder = T.query(on: req.db)
+        }
+        if let sortOrder: String = req.query[self.sortOrder] {
+            let isAscending = req.query[sortOrder] == self.ascending
+            builder.sort(\.$updatedDate, isAscending ? .ascending : .descending)
+        }
+        return builder.all().transformElementsWithEventLoopAppResponse(using: { Category.CategoryDTO(category: $0) })
     }
     
     @discardableResult

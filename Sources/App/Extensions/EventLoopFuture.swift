@@ -118,6 +118,14 @@ public extension Request {
     ) -> EventLoopFuture<AppResponse<T>> {
         eventLoop.mapFuturisticFailure(code: code, error: error, value: value)
     }
+    
+    func mapFuturisticFailureOnThisEventLoopForAContent<AContent: Content>(
+        code: HTTPResponseStatus,
+        error: ErrorMessage,
+        value: AContent.Type = AContent.self
+    ) -> EventLoopFuture<AppResponse<AContent>> {
+        eventLoop.mapFuturisticFailure(code: code, error: error, value: value)
+    }
 }
 
 public extension Array where Element: Content {

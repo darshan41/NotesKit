@@ -19,6 +19,8 @@ enum Entrypoint {
         
         do {
             try await configure(app)
+//            try await app.autoRevert().wait()
+//            try await app.autoMigrate().wait()
         } catch {
             app.logger.report(error: error)
             throw error

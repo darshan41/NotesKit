@@ -30,6 +30,10 @@ class GenericRootController<T: Notable>: @unchecked Sendable {
         "Unable to find the \(T.objectTitleForErrorTitle) for requested id: \(id)"
     }
     
+    func generateUnableToFindForModel<B: Modelable>(forRequested id: B.IDValue,valueType: B.Type = B.self) -> String {
+        "Unable to find the \(B.objectTitleForErrorTitle) for requested id: \(id)"
+    }
+    
     open func generateUnableToFindAny(forRequested type: T.Type,for method: HTTPMethod) -> String {
         "ID for path to \(method.rawValue.lowercased()) for an \(type) item must be present, eg: type/{\(type.objectIdentifierKey)} item.}"
     }
@@ -37,6 +41,11 @@ class GenericRootController<T: Notable>: @unchecked Sendable {
     open func generateUnableToFindAny(forRequested id: UUID,for method: HTTPMethod) -> String {
         "ID for path to \(method.rawValue.lowercased()) for an \(id) item must be present, eg: type/{particular-id-for-\(String.init(describing: id).lowercased())item.} "
     }
+    
+    open func generateUnableToFindAnyModel<B: Modelable>(forRequested type: B.Type,for method: HTTPMethod) -> String {
+        "ID for path to \(method.rawValue.lowercased()) for an \(type) item must be present, eg: type/{\(type.objectIdentifierKey)} item.}"
+    }
+    
     
     /// By Default All POST and Get use this.... as last path.
     /// - Returns: PathComponent

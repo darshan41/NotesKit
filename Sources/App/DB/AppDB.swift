@@ -62,6 +62,7 @@ public class AppDB {
                 CreateProfile(),
                 CreateAnime()
         )
+        try await app.autoMigrate()
         app.logger.logLevel = .debug
         try routes(
             app

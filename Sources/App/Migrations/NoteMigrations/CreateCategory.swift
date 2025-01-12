@@ -16,6 +16,7 @@ struct CreateCategory: AppMigration {
         database.schema(MigraterModelClass.schema)
             .id()
             .field(MigraterModelClass.name, .string, .required)
+            .unique(on: MigraterModelClass.name, name: MigraterModelClass.uniqueNameKey)
             .field(MigraterModelClass.createdDate, .date, .required)
             .field(MigraterModelClass.updatedDate, .date, .required)
             .create()

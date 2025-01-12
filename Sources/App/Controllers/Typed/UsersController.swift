@@ -157,11 +157,6 @@ extension NotesKit.UsersController {
     @Sendable
     func getAllCodableObjectsHandler(_ req: Request)
     -> EventLoopFuture<AppResponse<[User.UserDTO]>> {
-//        let isAscending = req.query[self.sortOrder] == self.ascending
-//        let isLikeWise = req.query[Bool.self, at: self.isLikeWise]
-//        let searchTerm = req.query[String.self, at: self.queryString]
-//        let userQueryBuilder: QueryBuilder<T> = T.query(on: req.db)
-        
         return T.query(on: req.db).all().map { results in
             results.map({ User.UserDTO(user: $0) }).successResponse()
         }

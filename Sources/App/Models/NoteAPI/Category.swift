@@ -9,18 +9,19 @@ import Foundation
 import Fluent
 import Vapor
 
-final class Category: SortableItem,@unchecked Sendable,Encodable {
+final class Category: SortableGenericItem, @unchecked Sendable,Encodable {
     
     static let schema = "categories"
     static let objectIdentifierKey: String = "categoryID"
+    static let uniqueNameKey: String = "nameUniqueKeyConstraint"
     
     static let name: FieldKey = FieldKey("name")
     static let createdDate: FieldKey = FieldKey("createdDate")
     static let updatedDate: FieldKey = FieldKey("updatedDate")
     
     
-    typealias T = FieldProperty<Category, SortingValue>
-    typealias U = FieldProperty<Category, FilteringValue>
+    typealias T = Date
+    typealias U = String
     
     typealias SortingValue = FilteringValue
     typealias FilteringValue = Date
@@ -36,6 +37,12 @@ final class Category: SortableItem,@unchecked Sendable,Encodable {
     
     @Field(key: updatedDate)
     var updatedDate: Date
+    
+    @Siblings(
+        through: NoteCategoryPivot.self,
+        from: \.$category,
+        to: \.$note)
+    var acronyms: [Note]
     
     init() { }
     
@@ -59,7 +66,7 @@ final class Category: SortableItem,@unchecked Sendable,Encodable {
 
 extension Category {
     
-    public struct CategoryDTO: Codable,Content {
+    public struct CategoryDTO: Codable, Content {
         let id: Category.IDValue?
         let name: String
         let createdDate: Date
@@ -80,9 +87,13 @@ extension Category {
         case updatedDate
     }
     
-    var someComparable: FluentKit.FieldProperty<Category, SortingValue> { self.$updatedDate }
+    var someComparable: any FluentKit.QueryableProperty {
+        $updatedDate
+    }
     
-    var filterSearchItem: FluentKit.FieldProperty<Category, FilteringValue> { self.$updatedDate }
+    var filterSearchItem: any FluentKit.QueryableProperty {
+        $name
+    }
     
     func requestUpdate(with newValue: Category) -> Category {
         self.name = newValue.name

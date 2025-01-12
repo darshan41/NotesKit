@@ -111,6 +111,7 @@ final class Note: SortableItem, @unchecked Sendable {
         case date
         case user
         case userId
+        case categories
     }
     
     var someComparable: FluentKit.FieldProperty<Note, Date> { self.$date }

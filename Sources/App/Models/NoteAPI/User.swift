@@ -11,13 +11,13 @@ import Fluent
 final class User: SortableGenericItem,@unchecked Sendable,Encodable {
     
     typealias T = Date
-    typealias U = Name
+    typealias U = String
     
     static let schema = "users"
     static let objectIdentifierKey: String = "userID"
     
     typealias SortingValue = Date
-    typealias FilteringValue = Name
+    typealias FilteringValue = String
         
     static let name: FieldKey = FieldKey("name")
     static let userName: FieldKey = FieldKey("userName")
@@ -138,12 +138,12 @@ extension User {
         case updatedDate
     }
     
-    var someComparable: AProperty<User, Date> {
-        AProperty(wrappedValue: self.updatedDate)
+    var someComparable: any FluentKit.QueryableProperty {
+        $updatedDate
     }
     
-    var filterSearchItem: AProperty<User, Name> {
-        AProperty(wrappedValue: self.name)
+    var filterSearchItem: any FluentKit.QueryableProperty {
+        $name
     }
     
     func requestUpdate(with newValue: User) -> User {

@@ -8,11 +8,11 @@
 import Foundation
 import Fluent
 
-public struct AProperty<Item: SortableGenericItem, Value: SortableItem.AProperAssociatedObject>: Comparable {
+public class AProperty<Item: SortableGenericItem, Value: SortableItem.AProperAssociatedObject>: Comparable {
     
-    private(set) var value: Value
+    public var value: Value?
     
-    public var wrappedValue: Value {
+    public var wrappedValue: Value? {
         value
     }
     
@@ -21,7 +21,10 @@ public struct AProperty<Item: SortableGenericItem, Value: SortableItem.AProperAs
     }
     
     public static func < (lhs: AProperty, rhs: AProperty) -> Bool {
-        lhs.value < rhs.value
+        if let lhsValue = lhs.value,let rhsValue = rhs.value {
+            return lhsValue < rhsValue
+        }
+        return false
     }
     
     public static func == (lhs: AProperty, rhs: AProperty) -> Bool {

@@ -90,8 +90,8 @@ public protocol SortableGenericItem: Notable {
     associatedtype T: AProperAssociatedObject
     associatedtype U: AProperAssociatedObject
     
-    var someComparable: AProperty<Self, T> { get }
-    var filterSearchItem: AProperty<Self, U> { get }
+    var someComparable: any QueryableProperty { get }
+    var filterSearchItem: any QueryableProperty { get }
 }
 
 extension Modelable {

@@ -17,8 +17,8 @@ final class NoteCategoryPivot: SortableItem,@unchecked Sendable {
     
     typealias T = FieldProperty<NoteCategoryPivot, SortingValue>
     typealias U = FieldProperty<NoteCategoryPivot, SortingValue>
-    
-    static let schema = "note-categories"
+        
+    static let schema = "note-categories-pivot"
     static let objectIdentifierKey: String = "noteCategoryID"
     
     static let noteID: FieldKey = FieldKey("noteID")
@@ -41,7 +41,10 @@ final class NoteCategoryPivot: SortableItem,@unchecked Sendable {
     @Field(key: updatedDate)
     var updatedDate: Date
     
-    init() { }
+    init() {
+        createdDate = Date()
+        updatedDate = Date()
+    }
     
     init(
         id: UUID? = nil,
@@ -51,6 +54,8 @@ final class NoteCategoryPivot: SortableItem,@unchecked Sendable {
         self.id = id
         self.$note.id = try note.requireID()
         self.$category.id = try category.requireID()
+        self.createdDate = Date()
+        self.updatedDate = Date()
     }
     
     init(from decoder: any Decoder) throws {
