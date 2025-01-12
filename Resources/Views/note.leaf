@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<!-- 1 -->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <!-- 2 -->
+        <title>#(title) | Notes</title>
+    </head>
+    <body>
+        <!-- 3 -->
+        #for(note in notes):
+        <tr>
+            <!-- 5 -->
+            <h1>#(note.note)</h1>
+            <p>Created by #(authorName)</p>
+        </tr>
+        #endfor
+        
+    </body>
+</html>
