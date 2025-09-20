@@ -7,12 +7,34 @@
 
 import Foundation
 import Vapor
+import FluentKit
+import PostgresNIO
 
 public final class CustomErrorMiddleware: Middleware {
     
+    public static func createRedableError(
+        environment: Environment,
+        from error: PostgresNIO.PSQLError
+    )
+     -> (HTTPResponseStatus, String, ErrorSource) {
+         let status: HTTPResponseStatus, reason: String, source: ErrorSource
+         status = .internalServerError
+         source = .capture()
+         if (environment.isRelease) {
+             reason = "Something went wrong."
+         } else {
+             reason = error.debugDescription
+         }
+         return (status,reason,source)
+    }
+    
     public static func `default`(environment: Environment) -> ErrorMiddleware {
-        return .init { req, error in
-            let status: HTTPResponseStatus, reason: String, source: ErrorSource
+        return .init {
+            req,
+            error in
+            let status: HTTPResponseStatus,
+                reason: String,
+                source: ErrorSource
             var headers: HTTPHeaders
             switch error {
             case let debugAbort as (DebuggableError & AbortError):
@@ -29,6 +51,10 @@ public final class CustomErrorMiddleware: Middleware {
                     reason = error.error?.errorDescription ?? error.localizedDescription
                     (status, headers, source) = (error.code, [:], .capture())
                 }
+            case let error as PostgresNIO.PSQLError:
+                let errorCodeStatement = createRedableError(environment: environment, from: error)
+                headers = [:]
+                (status, reason, source) = (errorCodeStatement.0,errorCodeStatement.1,errorCodeStatement.2)
             default:
                 let error = (error as NSError)
                 if (environment.isRelease) {
@@ -39,19 +65,25 @@ public final class CustomErrorMiddleware: Middleware {
                     (status, headers, source) = (.init(statusCode: error.code), [:], .capture())
                 }
             }
-            
-            // Report the error
+            headers.contentType = .json
             req.logger.report(error: error, file: source.file, function: source.function, line: source.line)
             let body: Response.Body
             do {
                 body = .init(
-                    buffer: try JSONEncoder().encodeAsByteBuffer(AppResponse<String>(code: status, error: .customString(reason), data: nil, isServerGeneratedError: true), allocator: req.byteBufferAllocator),
+                    buffer: try JSONEncoder().encodeAsByteBuffer(
+                        AppResponse<String>(
+                            code: status,
+                            error: .customString(reason),
+                            data: nil,
+                            isServerGeneratedError: true
+                        ),
+                        allocator: req.byteBufferAllocator
+                    ),
                     byteBufferAllocator: req.byteBufferAllocator
                 )
-                headers.contentType = .json
+                
             } catch {
                 body = .init(string: "Oops: \(String(describing: error))\nWhile encoding error: \(reason)", byteBufferAllocator: req.byteBufferAllocator)
-                headers.contentType = .plainText
             }
             return Response(status: status, headers: headers, body: body)
         }

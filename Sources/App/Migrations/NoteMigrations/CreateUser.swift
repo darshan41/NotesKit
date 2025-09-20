@@ -23,6 +23,8 @@ struct CreateUser: AppMigration {
             .field(MigraterModelClass.phone, .string, .required)
             .field(MigraterModelClass.createdDate, .date, .required)
             .field(MigraterModelClass.updatedDate, .date, .required)
+            .unique(on: MigraterModelClass.email, name: MigraterModelClass.email.description)
+            .unique(on: MigraterModelClass.phone, name: MigraterModelClass.phone.description)
             .create()
     }
     

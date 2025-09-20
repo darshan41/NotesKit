@@ -7,6 +7,7 @@
 
 import Fluent
 import Vapor
+import PostgresNIO
 
 public protocol ContentSendable: Content & Sendable { }
 
@@ -152,6 +153,84 @@ public extension EventLoop {
         value: T.Type = T.self
     ) -> EventLoopFuture<AppResponse<T>> {
         future(AppResponse(code: code, error: error, data: nil))
+    }
+}
+
+public enum AppConstraintViolation: ErrorShowable {
+    
+    public var identifier: String { "\(Self.self)" }
+    
+    public var reason: String {
+        switch self {
+        case .duplicate(let string):
+            return string
+        case .duplicates(let strings):
+            return strings.joined(separator: ",")
+        case .other(let string):
+            return string
+        }
+    }
+    
+    public var isUserShowableErrorMessage: Bool {
+        switch self {
+        case .duplicate,.duplicates:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    case duplicates([String])
+    case duplicate(String)
+    case other(String)
+}
+
+public extension Model {
+    
+    func constraintCheckedSave<T: Content & Sendable>(
+        on db: any Database,
+        appliedConstraintInformations: [String]? = nil,
+        content: T.Type = T.self,
+        transform: @escaping @Sendable () -> T
+    ) -> EventLoopFuture<AppResponse<T>> {
+        return self.save(on: db)
+            .map { _ in
+                return AppResponse<T>(code: .created, error: nil, data: transform())
+            }
+            .flatMapError { error in
+                var futureErrorMessage: ErrorMessage = ErrorMessage(.customError(AppConstraintViolation.other("Some Information already exists. Please try different values instead")))
+                
+                if let dbError = error as? DatabaseError, dbError.isConstraintFailure {
+                    if let pgError = error as? PSQLError {
+                        if let detail = pgError.serverInfo?[.detail] {
+                            let pattern = #"Key \((\w+)\)=\((.+)\) already exists"#
+                            if let regex = try? NSRegularExpression(pattern: pattern),
+                               let match = regex.firstMatch(in: detail, range: NSRange(detail.startIndex..., in: detail)),
+                               let keyRange = Range(match.range(at: 1), in: detail),
+                               let valueRange = Range(match.range(at: 2), in: detail) {
+                                let field = String(detail[keyRange])
+                                let value = String(detail[valueRange])
+                                futureErrorMessage = ErrorMessage(.customError(AppConstraintViolation.duplicate("\(field.capitalized) '\(value)' already exists. Please use a different one or login with this email.")))
+                            } else {
+                                if let appliedConstraintInformations, !appliedConstraintInformations.isEmpty  {
+                                    futureErrorMessage = ErrorMessage(.customError(AppConstraintViolation.duplicates(appliedConstraintInformations.shuffled())))
+                                } else {
+                                    futureErrorMessage = ErrorMessage(.customError(AppConstraintViolation.other(detail)))
+                                }
+                            }
+                        }
+                    } else {
+                        if let appliedConstraintInformations, !appliedConstraintInformations.isEmpty {
+                            futureErrorMessage = ErrorMessage(.customError(AppConstraintViolation.other("Some Information already exists like \(appliedConstraintInformations.shuffled().joined(separator: ",")).\n Please try different values instead")))
+                        } else {
+                            futureErrorMessage = ErrorMessage(.customError(AppConstraintViolation.other("Some Information already exists. Please try different values instead")))
+                        }
+                    }
+                    return db.eventLoop.mapFuturisticFailure(code: .badRequest, error: futureErrorMessage)
+                } else {
+                    return db.eventLoop.makeSucceededFuture(AppResponse<T>.init(code: .internalServerError, error: ErrorMessage(.customError(AppConstraintViolation.other("Some Information already exists. Please try different values instead"))), data: nil, isServerGeneratedError: true))
+                }
+            }
     }
 }
 

@@ -122,9 +122,17 @@ extension NotesKit.UsersController {
     func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<User.UserDTO>> {
         do {
             let user = try req.content.decode(T.self, using: self.decoder)
-            return user.save(on: req.db).map {
-                AppResponse<User.UserDTO>(code: .created, error: nil, data: User.UserDTO(user: user))
-            }
+            return user
+                .constraintCheckedSave(
+                    on: req.db,
+                    appliedConstraintInformations: [
+                        T.email.description,
+                        T.phone.description
+                    ],
+                    content: User.UserDTO.self
+                ) {
+                    return User.UserDTO(user: user)
+                }
         } catch {
             return req.eventLoop.future(AppResponse(code: .badRequest, error: .customString(error), data: nil))
         }

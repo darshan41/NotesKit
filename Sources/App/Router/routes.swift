@@ -1,4 +1,4 @@
-    import Vapor
+import Vapor
 import FluentKit
 
 func routes(_ app: Application) throws {

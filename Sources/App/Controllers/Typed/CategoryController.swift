@@ -67,7 +67,14 @@ extension NotesKit.CategoryController {
     func postCreateCodableObjectHandler(_ req: Request) -> EventLoopFuture<AppResponse<Category.CategoryDTO>> {
         do {
             let category = try req.content.decode(T.self, using: self.decoder)
-            return category.save(on: req.db).mapNewResponseFromVoid(newValue: Category.CategoryDTO(category: category))
+            return category
+                .constraintCheckedSave(
+                    on: req.db,
+                    appliedConstraintInformations: [T.uniqueNameKey],
+                    content: Category.CategoryDTO.self
+                ) {
+                    return Category.CategoryDTO(category: category)
+                }
         } catch {
             return req.mapFuturisticFailureOnThisEventLoop(code: .badRequest, error: .customString(error))
         }
