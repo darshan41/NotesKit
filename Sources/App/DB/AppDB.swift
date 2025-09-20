@@ -60,7 +60,9 @@ public class AppDB {
                 CreateNote(),
                 CreateNoteCategoryPivot(),
                 CreateProfile(),
-                CreateAnime()
+//                CreateAnime(),
+            CreateTest()
+            
         )
         try await app.autoRevert()
         app.logger.logLevel = .debug

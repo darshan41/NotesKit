@@ -44,6 +44,10 @@ class NotesKit: ApplicationManager, RoutesGenerator {
         NotesKit.CategoryController(kit: self)
     }()
     
+    lazy var testController: NotesKit.TestController = {
+        NotesKit.TestController(kit: self)
+    }()
+    
     init(app: Application, apiVersion: APIVersion) {
         self.app = app
         self.apiVersion = apiVersion
@@ -54,7 +58,8 @@ class NotesKit: ApplicationManager, RoutesGenerator {
             usersController,
             notesController,
             profilesController,
-            categoryController
+            categoryController,
+            testController
         ]
     }
 }
